@@ -1,0 +1,134 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options
+{
+  static = true;
+}
+
+PARSER_BEGIN(CompiladorAula)
+
+public class CompiladorAula
+{
+  public static void main(String args []) throws ParseException
+  {
+    CompiladorAula parser = new CompiladorAula(System.in);
+    while (true)
+    {
+      System.out.println("Welcome to the world! Start New World");
+      System.out.print("----- >  :");
+      try
+      {
+        switch (CompiladorAula.main())
+        {
+          case 0 : 
+          System.out.println("funfa.");
+          break;
+          case 1 : 
+          System.out.println("Tchau.");
+          break;
+          default : 
+          break;
+        }
+      }
+      catch (Exception e)
+      {
+        System.out.println("Deu ruim.");
+        System.out.println(e.getMessage());
+        CompiladorAula.ReInit(System.in);
+      }
+      catch (Error e)
+      {
+        System.out.println("Oops.");
+        System.out.println(e.getMessage());
+        break;
+      }
+    }
+  }
+}
+
+PARSER_END(CompiladorAula)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+TOKEN : /*PALAVRAS RESERVADAS */
+{
+  < CREATEWORLD    : "createWorld"                        >
+| < OVERWORLD      : "overWorld"                          >
+| < BEDROCK        : "bedrock"                            >
+| < TIPOINTEIRO    : "pedra"                              >
+| < TIPOFLOAT      : "agua"                               >
+| < TIPOSTRING     : "placa"                              >
+| < TIPOGRAVETO    : "graveto"                            >
+| < TIPODIAMANTE   : "blocoDiamante"                      >
+| < TIPOBOOLEAN    : "redStone"                           >
+} 
+
+TOKEN : /*OPERADORES*/
+{
+	< SOMA: "combine"          >
+|	< SUBTRACAO: "-"           >
+|	< MULTIPLICACAO: "*"       >
+|	< DIVISAO: "/"             >	
+|	< ATRIBUICAO: "<-"         >
+|	< MAIOR: "stronger"        >
+|	< MENOR: "weaker"          >
+|	< MENOR_IGUAL: "<="        >
+|	< MAIOR_IGUAL: ">="        >
+|	< DIFERENTE: "<>"          > 
+|	< IGUAL: "="               >
+	
+}
+
+TOKEN :
+{
+  < DECIMAL            : (< DIGITO >)+ ( "." (<DIGITO>)+ )?                                  >
+| < DIGITO             : [ "0"-"9" ]                                                         >
+| < ID                 : ["a" - "z" , "A" - "Z"](["a" - "z" , "A" - "Z" , "0" - "9", "_"])*  > 
+| < LETRA              : ["A" - "Z" ] | ["a" - "z"]                                          >
+| < PONTOVIRGULA       : ";"                                                                 >
+| < VIRGULA            : ","                                                                 >
+| < PARENTES_ESQUERDA  : ")"                                                                 >
+}
+
+int main() :
+{}
+{
+ <CREATEWORLD> <ID> <PONTOVIRGULA>
+(bloco())+ 
+
+{return 0;}
+}
+
+void bloco() : { }
+{
+    <OVERWORLD> (declaracaoVariavel())* <BEDROCK>
+}
+
+
+void comando() : { }
+{
+
+  	
+}
+
+void declaracaoVariavel():
+{
+}
+{
+	tipoDado() < ID > <PONTOVIRGULA >
+}
+
+
+void tipoDado() :
+{
+}
+{
+	< TIPOINTEIRO > | <  TIPOBOOLEAN > | < TIPOSTRING > | < TIPOFLOAT > | < TIPOGRAVETO > | < TIPODIAMANTE > 
+}
