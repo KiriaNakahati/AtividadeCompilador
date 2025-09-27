@@ -1,6 +1,9 @@
+
 /**
  * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
  */
+
+
 options
 {
   static = true;
@@ -9,10 +12,19 @@ options
 PARSER_BEGIN(CompiladorAula)
 
 
+
 public class CompiladorAula
 {
+  static String pos(Token t)
+  {
+  	if (t == null) return "posição desconhecida";
+  		return "linha " + t.beginLine + ", coluna " + t.beginColumn;
+  }
+  
   public static void main(String args []) throws ParseException
   {
+	System.out.println("Parser build: 2025-09-27-ifstmt-blocos");
+    
     CompiladorAula parser = new CompiladorAula(System.in);
     while (true)
     {
@@ -24,19 +36,19 @@ public class CompiladorAula
       }
       catch (Exception e)
       {
-        System.out.println("Deu ruim."); /*falta melhorar o tratamento de erros específicos do compilador*/
+        System.out.println("\nDeu ruim."); /*falta melhorar o tratamento de erros específicos do compilador*/
         System.out.println(e.getMessage());
         CompiladorAula.ReInit(System.in);
       }
       catch (TokenMgrError e)
 	  {
-        System.out.println("Erro léxico, tu não leu a gramática né.");
+        System.out.println("\nErro léxico, tu não leu a gramática né.");
         System.out.println(e.getMessage());
         CompiladorAula.ReInit(System.in);
 	  }
       catch (Error e)
       {
-        System.out.println("Oops.");
+        System.out.println("\nOops.");
         System.out.println(e.getMessage());
         break;
       }
@@ -81,6 +93,9 @@ TOKEN : /*PALAVRAS RESERVADAS */
 | < ABRIRWHILE     : "abrirwhile"                         >
 | < FECHARWHILE    : "fecharwhile"                        >
 | < BREAK          : "instakill"                          >
+| < FOR            : "intro_do_venon_extreme"             >
+| < ABRIRFOR       : "abrirfor"                           >
+| < FECHARFOR       : "fechafor"                           >
 } 
 
 TOKEN : /*OPERADORES*/
@@ -109,8 +124,7 @@ TOKEN :
 | < STRING             : "'" (~["'"])* "'"                                                   >
 | < PARENTES_ESQUERDA  : "("                                                                 >
 | < PARENTES_DIREITA   : ")"                                                                 >
-| < DELIMITAR_VARCHAR  : "'"                                                                 >
-
+| < DELIMITAR_VARCHAR  : "'"                                                                 > 
 }
 
 
@@ -131,16 +145,20 @@ void bloco() : { }
 void comando() : {} 
 {
   atribuicao()
- | LOOKAHEAD( <IF>  expressaoBooleana() < ABRIRIF > <THEN> (comando())+ < FECHARIF > <ELSE> ) ifThenElse()
- | ifThen()
+ | ifStmt()
  | whileLoop()
+ | forLoop() 
  | breakStmt()
 }
 
+/* ---------------------------------------------------- START BLOCO WHILE ---------------------------------------------------------------------------------*/
 void whileLoop() : {}
 {
-  <WHILE> expressaoBooleana() <ABRIRWHILE> (comando())+ <FECHARWHILE>
+  <WHILE> expressaoBooleana()
+  <ABRIRWHILE> blocoWhile() <FECHARWHILE>
 }
+
+void blocoWhile() : {} { ( declaracaoVariavel() |comando())+ }
 
 /* Sintático: aceita sempre; a regra “só dentro de loop” é semântica */
 void breakStmt() : {}
@@ -148,25 +166,62 @@ void breakStmt() : {}
   <BREAK> <PONTOVIRGULA>
 }
 
+/* ---------------------------------------------------- END BLOCO WHILE ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START BLOCO FOR ---------------------------------------------------------------------------------*/
+void forLoop() : {}
+{
+  <FOR> <PARENTES_ESQUERDA>
+      forInitOpt() <PONTOVIRGULA>
+      forCondOpt() <PONTOVIRGULA>
+      forUpdateOpt()
+  <PARENTES_DIREITA>
+  <ABRIRFOR> blocoFor() <FECHARFOR>
+}
+
+void blocoFor() : {} { ( declaracaoVariavel() |comando())+ }
+
+void forInitOpt()   : {} { ( forInit() )? }
+void forCondOpt()   : {} { ( expressaoBooleana() )? }
+void forUpdateOpt() : {} { ( atribuicaoFor() ( <VIRGULA> atribuicaoFor() )* )? }
+
+void forInit() : {}
+{
+    tipoDado() listaDeclaracoes()         // ex.: pedra i <- 0, j <- 1
+  | atribuicaoFor()                       // ex.: i <- 0
+}
+
+void atribuicaoFor() : {}
+{
+  <ID> <ATRIBUICAO> expressaoGeral()      // igual atribuição, só que SEM ; no fim
+}
+
+/* ---------------------------------------------------- END BLOCO FOR ---------------------------------------------------------------------------------*/
 
 /* ---------------------------------------------------- START ESTRUTURA DE CONTROLE ---------------------------------------------------------------------------------*/
-void ifThenElse() : {}
+void ifStmt() : {}
 {
-  <IF>  expressaoBooleana() < ABRIRIF > <THEN> (comando())+ < FECHARIF > <ELSE> <ABRIRELSE > comando() < FECHARELSE >
+  <IF> expressaoBooleana()
+  <ABRIRIF> <THEN> blocoIf() <FECHARIF>
+  ( <ELSE> <ABRIRELSE> blocoElse() <FECHARELSE> )?
 }
 
-void ifThen() : {}
-{
-  <IF>  expressaoBooleana() < ABRIRIF > <THEN> (comando())+ < FECHARIF >
-}
+void blocoIf()   : {} { ( declaracaoVariavel() | comando())+ }
+void blocoElse() : {} { ( declaracaoVariavel()  | comando())+ }
+
 /* ---------------------------------------------------- END ESTRUTURA DE CONTROLE ---------------------------------------------------------------------------------*/
 
 /* ---------------------------------------------------- START ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
 void atribuicao() : {}
 {
-  <ID> <ATRIBUICAO> expressaoGeral() <PONTOVIRGULA>
+  <ID> <ATRIBUICAO> expressaoGeral()
+  ( <PONTOVIRGULA> |
+    {
+      Token prox = token.next; 
+      throw new ParseException("Faltou ';' no fim da atribuição (" + pos(prox) + ").");
+    }
+  )
 }
-
 /* ---------------------------------------------------- END ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
 
 /* ---------------------------------------------------- START CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
@@ -247,11 +302,13 @@ void termoBooleano() : {}
 
 void fatorBooleano() : {}
 {
-  <TRUE>
-| <FALSE>
-| <NOT> fatorBooleano() 
-| parentesadoBoolOuRel()
-| comparacaoNumerica()
+    <TRUE>
+  | <FALSE>
+  | <NOT> fatorBooleano()
+  | parentesadoBoolOuRel()                        
+  | LOOKAHEAD( <ID> tipoCondicao() ) comparacaoNumerica()  
+  | LOOKAHEAD( <DECIMAL> tipoCondicao() ) comparacaoNumerica()
+  | <ID>                                          // ID booleano (ex.: pronto)
 }
 
 void parentesadoBoolOuRel() : {}

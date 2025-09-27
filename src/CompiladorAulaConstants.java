@@ -59,47 +59,53 @@ public interface CompiladorAulaConstants {
   /** RegularExpression Id. */
   int BREAK = 29;
   /** RegularExpression Id. */
-  int SOMA = 30;
+  int FOR = 30;
   /** RegularExpression Id. */
-  int SUBTRACAO = 31;
+  int ABRIRFOR = 31;
   /** RegularExpression Id. */
-  int MULTIPLICACAO = 32;
+  int FECHARFOR = 32;
   /** RegularExpression Id. */
-  int DIVISAO = 33;
+  int SOMA = 33;
   /** RegularExpression Id. */
-  int ATRIBUICAO = 34;
+  int SUBTRACAO = 34;
   /** RegularExpression Id. */
-  int MAIOR = 35;
+  int MULTIPLICACAO = 35;
   /** RegularExpression Id. */
-  int MENOR = 36;
+  int DIVISAO = 36;
   /** RegularExpression Id. */
-  int MENOR_IGUAL = 37;
+  int ATRIBUICAO = 37;
   /** RegularExpression Id. */
-  int MAIOR_IGUAL = 38;
+  int MAIOR = 38;
   /** RegularExpression Id. */
-  int DIFERENTE = 39;
+  int MENOR = 39;
   /** RegularExpression Id. */
-  int IGUAL = 40;
+  int MENOR_IGUAL = 40;
   /** RegularExpression Id. */
-  int DECIMAL = 41;
+  int MAIOR_IGUAL = 41;
   /** RegularExpression Id. */
-  int DIGITO = 42;
+  int DIFERENTE = 42;
   /** RegularExpression Id. */
-  int ID = 43;
+  int IGUAL = 43;
   /** RegularExpression Id. */
-  int LETRA = 44;
+  int DECIMAL = 44;
   /** RegularExpression Id. */
-  int PONTOVIRGULA = 45;
+  int DIGITO = 45;
   /** RegularExpression Id. */
-  int VIRGULA = 46;
+  int ID = 46;
   /** RegularExpression Id. */
-  int STRING = 47;
+  int LETRA = 47;
   /** RegularExpression Id. */
-  int PARENTES_ESQUERDA = 48;
+  int PONTOVIRGULA = 48;
   /** RegularExpression Id. */
-  int PARENTES_DIREITA = 49;
+  int VIRGULA = 49;
   /** RegularExpression Id. */
-  int DELIMITAR_VARCHAR = 50;
+  int STRING = 50;
+  /** RegularExpression Id. */
+  int PARENTES_ESQUERDA = 51;
+  /** RegularExpression Id. */
+  int PARENTES_DIREITA = 52;
+  /** RegularExpression Id. */
+  int DELIMITAR_VARCHAR = 53;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -136,6 +142,9 @@ public interface CompiladorAulaConstants {
     "\"abrirwhile\"",
     "\"fecharwhile\"",
     "\"instakill\"",
+    "\"intro_do_venon_extreme\"",
+    "\"abrirfor\"",
+    "\"fechafor\"",
     "\"combine\"",
     "\"-\"",
     "\"*\"",
