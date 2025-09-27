@@ -8,6 +8,7 @@ options
 
 PARSER_BEGIN(CompiladorAula)
 
+
 public class CompiladorAula
 {
   public static void main(String args []) throws ParseException
@@ -55,18 +56,31 @@ SKIP :
 
 TOKEN : /*PALAVRAS RESERVADAS */
 {
-  < CRIARMUNDO     : "criarmundo"                         >
-| < MUNDOABERTO    : "mundoaberto"                        >
-| < ROCHAMAE       : "rochamae"                           >
+  < CREATEWORLD    : "createworld"                        >
+| < OVERWORLD      : "overworld"                          >
+| < BEDROCK        : "bedrock"                            >
 | < TIPOINTEIRO    : "pedra"                              >
 | < TIPOFLUTUANTE  : "agua"                               >
 | < TIPOTEXTO      : "placa"                              >
 | < TIPOGRAVETO    : "graveto"                            >
-| < TIPODIAMANTE   : "blocoDiamante"                      >
+| < TIPODIAMANTE   : "diamante"                           >
 | < TIPOBINARIO    : "redstone"                           >
-| < IF             : "if"                                 >
+| < IF             : "vinicius13"                         >
 | < THEN           : "build"                              >
-| < ELSE           : "drop"                               >
+| < ELSE           : "monark"                             >
+| < TRUE           : "tocha_acessa"                       >
+| < FALSE          : "tocha_apagada"                      >
+| < AND            : "repetidor"                          >
+| < OR             : "or"                                 >
+| < NOT            : "tocha_invertida"                    >
+| < ABRIRELSE      : "acordaaaa_gente"                    >
+| < FECHARELSE     : "ja_tamo_na_ditadura"                >
+| < ABRIRIF        : "abririf"                            >
+| < FECHARIF       : "fecharif"                           >
+| < WHILE          : "em_busca_da_casa_automatica"        >
+| < ABRIRWHILE     : "abrirwhile"                         >
+| < FECHARWHILE    : "fecharwhile"                        >
+| < BREAK          : "instakill"                          >
 } 
 
 TOKEN : /*OPERADORES*/
@@ -92,76 +106,201 @@ TOKEN :
 | < LETRA              : ["A" - "Z" ] | ["a" - "z"]                                          >
 | < PONTOVIRGULA       : ";"                                                                 >
 | < VIRGULA            : ","                                                                 >
+| < STRING             : "'" (~["'"])* "'"                                                   >
 | < PARENTES_ESQUERDA  : "("                                                                 >
 | < PARENTES_DIREITA   : ")"                                                                 >
-| < DELIMITAR_VARCHAR  : "'"                                                                 > 
+| < DELIMITAR_VARCHAR  : "'"                                                                 >
+
 }
 
+
+/* ---------------------------------------------------- START BLOCO PRINCIPAL ---------------------------------------------------------------------------------*/
 void main() : {}
 {
-  <CRIARMUNDO> <ID> <PONTOVIRGULA> /*teste inicial concluido, criação da main*/
-  bloco() /*falta testar o que acontece qunado se adiciona o EOF no final*/
+  <CREATEWORLD> <ID> <PONTOVIRGULA> 
+  bloco()
 }
 
 void bloco() : { }
 {
-  <MUNDOABERTO> (declaracaoVariavel())* (comando())* <ROCHAMAE> /*testar comando()*/
+  <OVERWORLD> (declaracaoVariavel())* (comando())* <BEDROCK> 
 }
+
+/* ---------------------------------------------------- END BLOCO PRINCIPAL ---------------------------------------------------------------------------------*/
 
 void comando() : {} 
 {
-  atribuicao() /*teste de atribuição concluido*/
-| <IF> condicao() <THEN> comando() <ELSE> comando() /*####################################################3TESTANDO AGORA######*/
+  atribuicao()
+ | LOOKAHEAD( <IF>  expressaoBooleana() < ABRIRIF > <THEN> (comando())+ < FECHARIF > <ELSE> ) ifThenElse()
+ | ifThen()
+ | whileLoop()
+ | breakStmt()
 }
 
+void whileLoop() : {}
+{
+  <WHILE> expressaoBooleana() <ABRIRWHILE> (comando())+ <FECHARWHILE>
+}
+
+/* Sintático: aceita sempre; a regra “só dentro de loop” é semântica */
+void breakStmt() : {}
+{
+  <BREAK> <PONTOVIRGULA>
+}
+
+
+/* ---------------------------------------------------- START ESTRUTURA DE CONTROLE ---------------------------------------------------------------------------------*/
+void ifThenElse() : {}
+{
+  <IF>  expressaoBooleana() < ABRIRIF > <THEN> (comando())+ < FECHARIF > <ELSE> <ABRIRELSE > comando() < FECHARELSE >
+}
+
+void ifThen() : {}
+{
+  <IF>  expressaoBooleana() < ABRIRIF > <THEN> (comando())+ < FECHARIF >
+}
+/* ---------------------------------------------------- END ESTRUTURA DE CONTROLE ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
 void atribuicao() : {}
 {
-  /*
-  	expressão melhorada e passou nos testes de erros 
-  */
-  <ID> <ATRIBUICAO> expressao() <PONTOVIRGULA> 
+  <ID> <ATRIBUICAO> expressaoGeral() <PONTOVIRGULA>
 }
 
-/*expressao(), termo(), fator() ---- criei novos para melhorar o entendimento do tipo de expressão*/
+/* ---------------------------------------------------- END ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
 
+/* ---------------------------------------------------- START CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
+void expressaoGeral() : {}
+{
+    expressaoTexto()
+
+  // booleano óbvio
+  | LOOKAHEAD( <TRUE> | <FALSE> | <NOT> )
+      expressaoBooleana()
+
+  // (ID opRel ...) ou (DECIMAL opRel ...) logo após "("
+  | LOOKAHEAD( <PARENTES_ESQUERDA> <ID> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
+      expressaoBooleana()
+  | LOOKAHEAD( <PARENTES_ESQUERDA> <DECIMAL> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
+      expressaoBooleana()
+
+  // ((ID opRel ...)) ou ((DECIMAL opRel ...)) — parêntese duplo com comparação logo no segundo "("
+  | LOOKAHEAD( <PARENTES_ESQUERDA> <PARENTES_ESQUERDA> <ID> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
+      expressaoBooleana()
+  | LOOKAHEAD( <PARENTES_ESQUERDA> <PARENTES_ESQUERDA> <DECIMAL> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
+      expressaoBooleana()
+
+  // ( <exprArit> opRel <exprArit> )  — p.ex. (a combine 1 stronger b - 2)
+  | LOOKAHEAD( <PARENTES_ESQUERDA> expressao() tipoCondicao() )
+      expressaoBooleana()
+
+  // <exprArit> opRel <exprArit> — sem parênteses
+  | LOOKAHEAD( expressao() tipoCondicao() )
+      expressaoBooleana()
+
+  // fallback: numérica
+  | expressao()
+}
+
+/* ---------------------------------------------------- END CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START EXPRESSAO NÚMERICA ---------------------------------------------------------------------------------*/
+
+/* Expressões numéricas (somente números, variáveis e parênteses) */
 void expressao() : {}
 {
-  termo() ( ( <SOMA> | <SUBTRACAO> ) termo() )*
+  termoNumerico() ( ( <SOMA> | <SUBTRACAO> ) termoNumerico() )*
 }
 
-void termo() : {}
+void termoNumerico() : {}
 {
-  fator() ( ( <MULTIPLICACAO> | <DIVISAO> ) fator() )*
+  fatorNumerico() ( ( <MULTIPLICACAO> | <DIVISAO> ) fatorNumerico() )*
 }
 
-void fator() : {}
+void fatorNumerico() : {}
 {
   <ID> | <DECIMAL> | <PARENTES_ESQUERDA> expressao() <PARENTES_DIREITA>
 }
 
-void condicao() : {} /*#######################################################3TESTANDO AGORA######*/
+/* ---------------------------------------------------- END EXPRESSAO NUMÉRICA ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START EXPRESSAO TEXTO ---------------------------------------------------------------------------------*/
+
+
+void expressaoTexto() : {}
 {
-  expressao()
-  tipoCondicao() /*falta testar o tipo de condição*/
-  expressao()
+  < STRING > 
 }
+/* ---------------------------------------------------- END EXPRESSAO TEXTO ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START EXPRESSAO BOOLEANA ---------------------------------------------------------------------------------*/
+
+void expressaoBooleana() : {}
+{
+  termoBooleano() ( <OR> termoBooleano() )*
+}
+
+void termoBooleano() : {}
+{
+  fatorBooleano() ( <AND> fatorBooleano() )*
+}
+
+void fatorBooleano() : {}
+{
+  <TRUE>
+| <FALSE>
+| <NOT> fatorBooleano() 
+| parentesadoBoolOuRel()
+| comparacaoNumerica()
+}
+
+void parentesadoBoolOuRel() : {}
+{
+  LOOKAHEAD( <PARENTES_ESQUERDA> expressao() tipoCondicao() )
+    <PARENTES_ESQUERDA> expressao() tipoCondicao() expressao() <PARENTES_DIREITA>
+|
+    <PARENTES_ESQUERDA> expressaoBooleana() <PARENTES_DIREITA>
+}
+/* ---------------------------------------------------- END EXPRESSAO BOOLEANA ---------------------------------------------------------------------------------*/
+
+void comparacaoNumerica() : {}
+{
+  expressao() tipoCondicao() expressao()
+}
+
+/* ---------------------------------------------------- START DECLARACAO VARIAVEL ---------------------------------------------------------------------------------*/
 
 void declaracaoVariavel() : {}
-{ /*testede declaracao de variaveis concluido*/
-  tipoDado() identificadorVariaveis() <PONTOVIRGULA>   /*aqui ele so permite que seja declarado, int a, b, c, não permite a declaração por exemplo de int a b;*/
+{
+  tipoDado() listaDeclaracoes() <PONTOVIRGULA>
 }
 
-void identificadorVariaveis() : {}
-{/*teste de identificador de variável concluido*/
-  <ID> ( <VIRGULA> <ID> )*
+void listaDeclaracoes() : {}
+{
+  declaracaoUnica() ( <VIRGULA> declaracaoUnica() )*
 }
 
-void tipoDado() : {} /*funcão que generaliza o tipo de dado */
+void declaracaoUnica() : {}
+{
+  <ID> ( <ATRIBUICAO>  expressaoGeral() )?
+}
+
+/* ---------------------------------------------------- END DECLARACAO VARIAVEL ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START TIPOS DE DADOS---------------------------------------------------------------------------------*/
+
+void tipoDado() : {} 
 {
 	< TIPOINTEIRO > | <  TIPOBINARIO > | < TIPOTEXTO > | < TIPOFLUTUANTE > | < TIPOGRAVETO > | < TIPODIAMANTE >
 }
+/* ---------------------------------------------------- END TIPOS DE DADOS ---------------------------------------------------------------------------------*/
 
-void tipoCondicao() : {} /*função que generaliza as condições*/
+/* ---------------------------------------------------- STAR TIPO DE CONDIÇÃO ---------------------------------------------------------------------------------*/
+
+void tipoCondicao() : {} 
 {
 	<MAIOR> | <MENOR> | <MAIOR_IGUAL> | <MENOR_IGUAL> | <IGUAL> | <DIFERENTE> 
 }
+
+/* ---------------------------------------------------- STAR TIPO DE CONDIÇÃO ---------------------------------------------------------------------------------*/
+

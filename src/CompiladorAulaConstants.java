@@ -9,11 +9,11 @@ public interface CompiladorAulaConstants {
   /** End of File. */
   int EOF = 0;
   /** RegularExpression Id. */
-  int CRIARMUNDO = 5;
+  int CREATEWORLD = 5;
   /** RegularExpression Id. */
-  int MUNDOABERTO = 6;
+  int OVERWORLD = 6;
   /** RegularExpression Id. */
-  int ROCHAMAE = 7;
+  int BEDROCK = 7;
   /** RegularExpression Id. */
   int TIPOINTEIRO = 8;
   /** RegularExpression Id. */
@@ -33,45 +33,73 @@ public interface CompiladorAulaConstants {
   /** RegularExpression Id. */
   int ELSE = 16;
   /** RegularExpression Id. */
-  int SOMA = 17;
+  int TRUE = 17;
   /** RegularExpression Id. */
-  int SUBTRACAO = 18;
+  int FALSE = 18;
   /** RegularExpression Id. */
-  int MULTIPLICACAO = 19;
+  int AND = 19;
   /** RegularExpression Id. */
-  int DIVISAO = 20;
+  int OR = 20;
   /** RegularExpression Id. */
-  int ATRIBUICAO = 21;
+  int NOT = 21;
   /** RegularExpression Id. */
-  int MAIOR = 22;
+  int ABRIRELSE = 22;
   /** RegularExpression Id. */
-  int MENOR = 23;
+  int FECHARELSE = 23;
   /** RegularExpression Id. */
-  int MENOR_IGUAL = 24;
+  int ABRIRIF = 24;
   /** RegularExpression Id. */
-  int MAIOR_IGUAL = 25;
+  int FECHARIF = 25;
   /** RegularExpression Id. */
-  int DIFERENTE = 26;
+  int WHILE = 26;
   /** RegularExpression Id. */
-  int IGUAL = 27;
+  int ABRIRWHILE = 27;
   /** RegularExpression Id. */
-  int DECIMAL = 28;
+  int FECHARWHILE = 28;
   /** RegularExpression Id. */
-  int DIGITO = 29;
+  int BREAK = 29;
   /** RegularExpression Id. */
-  int ID = 30;
+  int SOMA = 30;
   /** RegularExpression Id. */
-  int LETRA = 31;
+  int SUBTRACAO = 31;
   /** RegularExpression Id. */
-  int PONTOVIRGULA = 32;
+  int MULTIPLICACAO = 32;
   /** RegularExpression Id. */
-  int VIRGULA = 33;
+  int DIVISAO = 33;
   /** RegularExpression Id. */
-  int PARENTES_ESQUERDA = 34;
+  int ATRIBUICAO = 34;
   /** RegularExpression Id. */
-  int PARENTES_DIREITA = 35;
+  int MAIOR = 35;
   /** RegularExpression Id. */
-  int DELIMITAR_VARCHAR = 36;
+  int MENOR = 36;
+  /** RegularExpression Id. */
+  int MENOR_IGUAL = 37;
+  /** RegularExpression Id. */
+  int MAIOR_IGUAL = 38;
+  /** RegularExpression Id. */
+  int DIFERENTE = 39;
+  /** RegularExpression Id. */
+  int IGUAL = 40;
+  /** RegularExpression Id. */
+  int DECIMAL = 41;
+  /** RegularExpression Id. */
+  int DIGITO = 42;
+  /** RegularExpression Id. */
+  int ID = 43;
+  /** RegularExpression Id. */
+  int LETRA = 44;
+  /** RegularExpression Id. */
+  int PONTOVIRGULA = 45;
+  /** RegularExpression Id. */
+  int VIRGULA = 46;
+  /** RegularExpression Id. */
+  int STRING = 47;
+  /** RegularExpression Id. */
+  int PARENTES_ESQUERDA = 48;
+  /** RegularExpression Id. */
+  int PARENTES_DIREITA = 49;
+  /** RegularExpression Id. */
+  int DELIMITAR_VARCHAR = 50;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -83,18 +111,31 @@ public interface CompiladorAulaConstants {
     "\"\\r\"",
     "\"\\t\"",
     "\"\\n\"",
-    "\"criarmundo\"",
-    "\"mundoaberto\"",
-    "\"rochamae\"",
+    "\"createworld\"",
+    "\"overworld\"",
+    "\"bedrock\"",
     "\"pedra\"",
     "\"agua\"",
     "\"placa\"",
     "\"graveto\"",
-    "\"blocoDiamante\"",
+    "\"diamante\"",
     "\"redstone\"",
-    "\"if\"",
+    "\"vinicius13\"",
     "\"build\"",
-    "\"drop\"",
+    "\"monark\"",
+    "\"tocha_acessa\"",
+    "\"tocha_apagada\"",
+    "\"repetidor\"",
+    "\"or\"",
+    "\"tocha_invertida\"",
+    "\"acordaaaa_gente\"",
+    "\"ja_tamo_na_ditadura\"",
+    "\"abririf\"",
+    "\"fecharif\"",
+    "\"em_busca_da_casa_automatica\"",
+    "\"abrirwhile\"",
+    "\"fecharwhile\"",
+    "\"instakill\"",
     "\"combine\"",
     "\"-\"",
     "\"*\"",
@@ -112,6 +153,7 @@ public interface CompiladorAulaConstants {
     "<LETRA>",
     "\";\"",
     "\",\"",
+    "<STRING>",
     "\"(\"",
     "\")\"",
     "\"\\\'\"",
