@@ -21,91 +21,87 @@ public interface CompiladorAulaConstants {
   /** RegularExpression Id. */
   int TIPOTEXTO = 10;
   /** RegularExpression Id. */
-  int TIPOGRAVETO = 11;
+  int TIPOBINARIO = 11;
   /** RegularExpression Id. */
-  int TIPODIAMANTE = 12;
+  int IF = 12;
   /** RegularExpression Id. */
-  int TIPOBINARIO = 13;
+  int THEN = 13;
   /** RegularExpression Id. */
-  int IF = 14;
+  int ELSE = 14;
   /** RegularExpression Id. */
-  int THEN = 15;
+  int TRUE = 15;
   /** RegularExpression Id. */
-  int ELSE = 16;
+  int FALSE = 16;
   /** RegularExpression Id. */
-  int TRUE = 17;
+  int AND = 17;
   /** RegularExpression Id. */
-  int FALSE = 18;
+  int OR = 18;
   /** RegularExpression Id. */
-  int AND = 19;
+  int NOT = 19;
   /** RegularExpression Id. */
-  int OR = 20;
+  int ABRIRELSE = 20;
   /** RegularExpression Id. */
-  int NOT = 21;
+  int FECHARELSE = 21;
   /** RegularExpression Id. */
-  int ABRIRELSE = 22;
+  int ABRIRIF = 22;
   /** RegularExpression Id. */
-  int FECHARELSE = 23;
+  int FECHARIF = 23;
   /** RegularExpression Id. */
-  int ABRIRIF = 24;
+  int WHILE = 24;
   /** RegularExpression Id. */
-  int FECHARIF = 25;
+  int ABRIRWHILE = 25;
   /** RegularExpression Id. */
-  int WHILE = 26;
+  int FECHARWHILE = 26;
   /** RegularExpression Id. */
-  int ABRIRWHILE = 27;
+  int BREAK = 27;
   /** RegularExpression Id. */
-  int FECHARWHILE = 28;
+  int FOR = 28;
   /** RegularExpression Id. */
-  int BREAK = 29;
+  int ABRIRFOR = 29;
   /** RegularExpression Id. */
-  int FOR = 30;
+  int FECHARFOR = 30;
   /** RegularExpression Id. */
-  int ABRIRFOR = 31;
+  int SOMA = 31;
   /** RegularExpression Id. */
-  int FECHARFOR = 32;
+  int SUBTRACAO = 32;
   /** RegularExpression Id. */
-  int SOMA = 33;
+  int MULTIPLICACAO = 33;
   /** RegularExpression Id. */
-  int SUBTRACAO = 34;
+  int DIVISAO = 34;
   /** RegularExpression Id. */
-  int MULTIPLICACAO = 35;
+  int ATRIBUICAO = 35;
   /** RegularExpression Id. */
-  int DIVISAO = 36;
+  int MAIOR = 36;
   /** RegularExpression Id. */
-  int ATRIBUICAO = 37;
+  int MENOR = 37;
   /** RegularExpression Id. */
-  int MAIOR = 38;
+  int MENOR_IGUAL = 38;
   /** RegularExpression Id. */
-  int MENOR = 39;
+  int MAIOR_IGUAL = 39;
   /** RegularExpression Id. */
-  int MENOR_IGUAL = 40;
+  int DIFERENTE = 40;
   /** RegularExpression Id. */
-  int MAIOR_IGUAL = 41;
+  int IGUAL = 41;
   /** RegularExpression Id. */
-  int DIFERENTE = 42;
+  int DECIMAL = 42;
   /** RegularExpression Id. */
-  int IGUAL = 43;
+  int DIGITO = 43;
   /** RegularExpression Id. */
-  int DECIMAL = 44;
+  int ID = 44;
   /** RegularExpression Id. */
-  int DIGITO = 45;
+  int LETRA = 45;
   /** RegularExpression Id. */
-  int ID = 46;
+  int PONTOVIRGULA = 46;
   /** RegularExpression Id. */
-  int LETRA = 47;
+  int VIRGULA = 47;
   /** RegularExpression Id. */
-  int PONTOVIRGULA = 48;
+  int STRING = 48;
   /** RegularExpression Id. */
-  int VIRGULA = 49;
+  int PARENTES_ESQUERDA = 49;
   /** RegularExpression Id. */
-  int STRING = 50;
+  int PARENTES_DIREITA = 50;
   /** RegularExpression Id. */
-  int PARENTES_ESQUERDA = 51;
-  /** RegularExpression Id. */
-  int PARENTES_DIREITA = 52;
-  /** RegularExpression Id. */
-  int DELIMITAR_VARCHAR = 53;
+  int DELIMITAR_VARCHAR = 51;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -123,8 +119,6 @@ public interface CompiladorAulaConstants {
     "\"pedra\"",
     "\"agua\"",
     "\"placa\"",
-    "\"graveto\"",
-    "\"diamante\"",
     "\"redstone\"",
     "\"vinicius13\"",
     "\"build\"",
@@ -136,15 +130,15 @@ public interface CompiladorAulaConstants {
     "\"tocha_invertida\"",
     "\"acordaaaa_gente\"",
     "\"ja_tamo_na_ditadura\"",
-    "\"abririf\"",
-    "\"fecharif\"",
+    "\"gamemode_creative\"",
+    "\"gamemode_survival\"",
     "\"em_busca_da_casa_automatica\"",
-    "\"abrirwhile\"",
-    "\"fecharwhile\"",
-    "\"instakill\"",
-    "\"intro_do_venon_extreme\"",
-    "\"abrirfor\"",
-    "\"fechafor\"",
+    "\"farm_de_ferro\"",
+    "\"farm_de_cana_de_acucar\"",
+    "\"kill\"",
+    "\"intro_do_venom_extreme\"",
+    "\"portal_do_aether\"",
+    "\"portal_do_nether\"",
     "\"combine\"",
     "\"-\"",
     "\"*\"",

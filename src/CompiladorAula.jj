@@ -187,8 +187,6 @@ TOKEN : /*PALAVRAS RESERVADAS */
 | < TIPOINTEIRO    : "pedra"                              >
 | < TIPOFLUTUANTE  : "agua"                               >
 | < TIPOTEXTO      : "placa"                              >
-| < TIPOGRAVETO    : "graveto"                            >
-| < TIPODIAMANTE   : "diamante"                           >
 | < TIPOBINARIO    : "redstone"                           >
 | < IF             : "vinicius13"                         >
 | < THEN           : "build"                              >
@@ -200,15 +198,15 @@ TOKEN : /*PALAVRAS RESERVADAS */
 | < NOT            : "tocha_invertida"                    >
 | < ABRIRELSE      : "acordaaaa_gente"                    >
 | < FECHARELSE     : "ja_tamo_na_ditadura"                >
-| < ABRIRIF        : "abririf"                            >
-| < FECHARIF       : "fecharif"                           >
+| < ABRIRIF        : "gamemode_creative"                  >
+| < FECHARIF       : "gamemode_survival"                  >
 | < WHILE          : "em_busca_da_casa_automatica"        >
-| < ABRIRWHILE     : "abrirwhile"                         >
-| < FECHARWHILE    : "fecharwhile"                        >
-| < BREAK          : "instakill"                          >
-| < FOR            : "intro_do_venon_extreme"             >
-| < ABRIRFOR       : "abrirfor"                           >
-| < FECHARFOR       : "fechafor"                           >
+| < ABRIRWHILE     : "farm_de_ferro"                      >
+| < FECHARWHILE    : "farm_de_cana_de_acucar"             >
+| < BREAK          : "kill"                               >
+| < FOR            : "intro_do_venom_extreme"             >
+| < ABRIRFOR       : "portal_do_aether"                   >
+| < FECHARFOR      : "portal_do_nether"                   >
 } 
 
 TOKEN : /*OPERADORES*/
@@ -327,13 +325,7 @@ void blocoElse() : {} { ( declaracaoVariavel()  | comando())+ }
 /* ---------------------------------------------------- START ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
 void atribuicao() : {}
 {
-  <ID> <ATRIBUICAO> expressaoGeral()
-  ( <PONTOVIRGULA> |
-    {
-      Token prox = token.next; 
-      throw new ParseException("Faltou ';' no fim da atribuição (" + pos(prox) + ").");
-    }
-  )
+  <ID> <ATRIBUICAO> expressaoGeral() <PONTOVIRGULA> 
 }
 /* ---------------------------------------------------- END ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
 
@@ -417,7 +409,7 @@ void termoBooleano() : {}
   fatorBooleano() ( <AND> fatorBooleano() )*
 }
 
-/* ---------- FATOR BOOLEANO ---------- */
+
 void fatorBooleano() : {}
 {
     // literais e negação
@@ -479,7 +471,7 @@ void declaracaoUnica() : {}
 
 void tipoDado() : {} 
 {
-	< TIPOINTEIRO > | <  TIPOBINARIO > | < TIPOTEXTO > | < TIPOFLUTUANTE > | < TIPOGRAVETO > | < TIPODIAMANTE >
+	< TIPOINTEIRO > | <  TIPOBINARIO > | < TIPOTEXTO > | < TIPOFLUTUANTE >
 }
 /* ---------------------------------------------------- END TIPOS DE DADOS ---------------------------------------------------------------------------------*/
 
