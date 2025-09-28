@@ -12,49 +12,162 @@ options
 PARSER_BEGIN(CompiladorAula)
 
 
+public class CompiladorAula {
 
-public class CompiladorAula
-{
-  static String pos(Token t)
-  {
-  	if (t == null) return "posição desconhecida";
-  		return "linha " + t.beginLine + ", coluna " + t.beginColumn;
+  /* ===================== Helpers ===================== */
+
+  // Posição amigável (linha, coluna)
+  static String pos(Token t) {
+    return (t == null) ? "linha ?, coluna ?" : "linha " + t.beginLine + ", coluna " + t.beginColumn;
   }
-  
-  public static void main(String args []) throws ParseException
-  {
-	System.out.println("Parser build: 2025-09-27-ifstmt-blocos");
-    
+
+  // Remove aspas iniciais/finais e normaliza escapes simples
+  static String unquote(String s) {
+    if (s == null || s.length() < 2) return s;
+    char a = s.charAt(0), b = s.charAt(s.length() - 1);
+    if ((a == '"' && b == '"') || (a == '\'' && b == '\'')) {
+      s = s.substring(1, s.length() - 1);
+    }
+    return s.replace("\\\"", "\"").replace("\\\\", "\\");
+  }
+
+  /* ===================== Sintaxe (ParseException) ===================== */
+
+  // Mensagem 100% PT-BR para erro sintático do JavaCC
+  static String fmtSintaxe(ParseException e) {
+    // token inesperado é o "próximo" após o último consumido
+    Token last = CompiladorAula.token;
+    Token inesperado = (last != null) ? last.next : null;
+
+    // Monte a lista de esperados (primeiro símbolo de cada sequência)
+    String esperados = "(não disponível)";
+    if (e.expectedTokenSequences != null && e.tokenImage != null) {
+      java.util.LinkedHashSet<String> uniq = new java.util.LinkedHashSet<>();
+      for (int[] seq : e.expectedTokenSequences) {
+        if (seq.length > 0) {
+          String img = e.tokenImage[seq[0]];
+          uniq.add(unquote(img));
+        }
+      }
+      if (!uniq.isEmpty()) esperados = String.join(", ", uniq);
+    }
+
+    // Descrição do token encontrado
+    String encontrado;
+    if (inesperado == null) {
+      encontrado = "<EOF>";
+    } else {
+      String nome = (inesperado.kind >= 0 && inesperado.kind < tokenImage.length)
+          ? unquote(tokenImage[inesperado.kind])
+          : ("<" + inesperado.kind + ">");
+      String lexema = (inesperado.image != null) ? (" (lexema: \"" + inesperado.image + "\")") : "";
+      encontrado = nome + lexema;
+    }
+
+    // Mensagem final – sem anexar a string em inglês do JavaCC
+    return "Erro de sintaxe.\n"
+         + "Encontrei: " + encontrado + " em " + pos(inesperado) + ".\n"
+         + "Eu esperava um destes: " + esperados + ".";
+  }
+
+  /* ===================== Léxico (TokenMgrError) ===================== */
+
+  // Regex para extrair linha/coluna/char da mensagem padrão do scanner
+  private static final java.util.regex.Pattern LEX_RE =
+      java.util.regex.Pattern.compile(
+          "line\\s+(\\d+)\\s*,\\s*column\\s+(\\d+).*?Encountered:\\s*(\".*?\"|'.*?'|<EOF>|[^,\\s]+)\\s*"
+        + "(?:\\((\\-?\\d+)\\))?\\s*,?\\s*(?:after\\s*:\\s*(\".*?\"|'.*?'))?",
+          java.util.regex.Pattern.DOTALL);
+
+  // Mensagem 100% PT-BR para erro léxico
+  static String fmtLexico(TokenMgrError e) {
+    String raw = e.getMessage();
+    if (raw == null) return "Erro léxico.";
+
+    java.util.regex.Matcher m = LEX_RE.matcher(raw);
+    if (m.find()) {
+      String line = m.group(1), col = m.group(2);
+      String enc  = m.group(3), code = m.group(4), aft = m.group(5);
+
+      String ch = (enc == null) ? "" : enc.trim();
+      // tira aspas do encontrado
+      if (ch.length() >= 2 && (
+          (ch.charAt(0) == '"' && ch.charAt(ch.length()-1) == '"') ||
+          (ch.charAt(0) == '\'' && ch.charAt(ch.length()-1) == '\''))) {
+        ch = ch.substring(1, ch.length() - 1);
+      }
+      // se veio código numérico, tenta reconstruir o caractere
+      if (ch.matches("\\d+") && code != null) {
+        try { ch = new String(Character.toChars(Integer.parseInt(code))); } catch (Exception ignore) {}
+      }
+      // normaliza escapes visuais
+      ch = ch.replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t")
+             .replace("\\\"", "\"").replace("\\\\", "\\");
+
+      String unicode = "";
+      if (code != null) {
+        try {
+          int cp = Integer.parseInt(code);
+          unicode = String.format(" (U+%04X, %d)", cp, cp);
+        } catch (Exception ignore) {}
+      }
+
+      StringBuilder sb = new StringBuilder();
+      sb.append("Erro léxico na ").append("linha ").append(line)
+        .append(", coluna ").append(col).append(". ");
+      sb.append("Encontrei: ")
+        .append("<EOF>".equals(enc) ? "<EOF> (fim de arquivo)" : "'" + ch + "'" + unicode)
+        .append(".");
+      if (aft != null) {
+        String after = unquote(aft);
+        sb.append(" Após: '").append(after).append("'.");
+      }
+      return sb.toString();
+    }
+
+    // fallback enxuto em PT-BR
+    return "Erro léxico.";
+  }
+
+  /* ===================== Loop interativo ===================== */
+
+  public static void main(String[] args) throws ParseException {
+    System.out.println("Parser build: 2025-09-27-ifstmt-blocos");
+
     CompiladorAula parser = new CompiladorAula(System.in);
-    while (true)
-    {
+    while (true) {
       System.out.println("Welcome to the world! Start New World");
       System.out.print("----- >  :");
-      try
-      {
-        parser.main();
-      }
-      catch (Exception e)
-      {
-        System.out.println("\nDeu ruim."); /*falta melhorar o tratamento de erros específicos do compilador*/
-        System.out.println(e.getMessage());
+
+      try {
+        parser.main(); // chama a produção raiz do JavaCC
+
+      } catch (ParseException e) {
+        // Erros de sintaxe (parser)
+        System.out.println("\n" + fmtSintaxe(e));
         CompiladorAula.ReInit(System.in);
-      }
-      catch (TokenMgrError e)
-	  {
-        System.out.println("\nErro léxico, tu não leu a gramática né.");
-        System.out.println(e.getMessage());
+
+      } catch (TokenMgrError e) {
+        // Erros léxicos (scanner)
+        System.out.println("\n" + fmtLexico(e));
         CompiladorAula.ReInit(System.in);
-	  }
-      catch (Error e)
-      {
-        System.out.println("\nOops.");
-        System.out.println(e.getMessage());
+
+      } catch (Exception e) {
+        // Qualquer outra exceção – mantém PT-BR
+        System.out.println("\nErro inesperado.");
+        if (e.getMessage() != null) System.out.println(e.getMessage());
+        CompiladorAula.ReInit(System.in);
+
+      } catch (Error e) {
+        // Erros fatais (encerra o loop)
+        System.out.println("\nOops. Erro fatal.");
+        if (e.getMessage() != null) System.out.println(e.getMessage());
         break;
       }
     }
   }
 }
+
 
 PARSER_END(CompiladorAula)
 
@@ -227,35 +340,39 @@ void atribuicao() : {}
 /* ---------------------------------------------------- START CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
 void expressaoGeral() : {}
 {
+    // texto
     expressaoTexto()
 
   // booleano óbvio
   | LOOKAHEAD( <TRUE> | <FALSE> | <NOT> )
       expressaoBooleana()
 
-  // (ID opRel ...) ou (DECIMAL opRel ...) logo após "("
-  | LOOKAHEAD( <PARENTES_ESQUERDA> <ID> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
-      expressaoBooleana()
-  | LOOKAHEAD( <PARENTES_ESQUERDA> <DECIMAL> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
-      expressaoBooleana()
-
-  // ((ID opRel ...)) ou ((DECIMAL opRel ...)) — parêntese duplo com comparação logo no segundo "("
-  | LOOKAHEAD( <PARENTES_ESQUERDA> <PARENTES_ESQUERDA> <ID> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
-      expressaoBooleana()
-  | LOOKAHEAD( <PARENTES_ESQUERDA> <PARENTES_ESQUERDA> <DECIMAL> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
-      expressaoBooleana()
-
-  // ( <exprArit> opRel <exprArit> )  — p.ex. (a combine 1 stronger b - 2)
+  // ( exprArit opRel exprArit ) — comparação inteira entre parênteses
   | LOOKAHEAD( <PARENTES_ESQUERDA> expressao() tipoCondicao() )
       expressaoBooleana()
 
-  // <exprArit> opRel <exprArit> — sem parênteses
+  // exprArit opRel exprArit — sem parênteses
   | LOOKAHEAD( expressao() tipoCondicao() )
+      expressaoBooleana()
+
+  // ( ... ) contendo uma expressão booleana completa
+  | LOOKAHEAD( <PARENTES_ESQUERDA> expressaoBooleana() <PARENTES_DIREITA> )
+      expressaoBooleana()
+
+  // booleanas que começam com ID
+  // 1) ID seguido de operador lógico
+  | LOOKAHEAD( <ID> ( <AND> | <OR> ) )
+      expressaoBooleana()
+
+  // 2) ID sozinho terminando a subexpressão (antes de ';' ou ')')
+  | LOOKAHEAD( <ID> ( <PONTOVIRGULA> | <PARENTES_DIREITA> ) )
       expressaoBooleana()
 
   // fallback: numérica
   | expressao()
 }
+
+
 
 /* ---------------------------------------------------- END CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
 
@@ -300,24 +417,38 @@ void termoBooleano() : {}
   fatorBooleano() ( <AND> fatorBooleano() )*
 }
 
+/* ---------- FATOR BOOLEANO ---------- */
 void fatorBooleano() : {}
 {
+    // literais e negação
     <TRUE>
   | <FALSE>
   | <NOT> fatorBooleano()
-  | parentesadoBoolOuRel()                        
-  | LOOKAHEAD( <ID> tipoCondicao() ) comparacaoNumerica()  
-  | LOOKAHEAD( <DECIMAL> tipoCondicao() ) comparacaoNumerica()
-  | <ID>                                          // ID booleano (ex.: pronto)
+
+  // ( ... ) contendo expressão booleana
+  | LOOKAHEAD( <PARENTES_ESQUERDA> expressaoBooleana() <PARENTES_DIREITA> )
+    <PARENTES_ESQUERDA> expressaoBooleana() <PARENTES_DIREITA>
+
+  // ( exprArit opRel exprArit ) — comparação inteira dentro dos parênteses
+  | LOOKAHEAD( <PARENTES_ESQUERDA> expressao() tipoCondicao() expressao() <PARENTES_DIREITA> )
+    <PARENTES_ESQUERDA> expressao() tipoCondicao() expressao() <PARENTES_DIREITA>
+
+  // (exprArit) opRel exprArit — relacional FORA do parêntese
+  | LOOKAHEAD( <PARENTES_ESQUERDA> )
+    comparacaoNumerica()
+
+  // exprArit opRel exprArit — começando por ID ou DECIMAL
+  | LOOKAHEAD( <ID> tipoCondicao() )        comparacaoNumerica()
+  | LOOKAHEAD( <DECIMAL> tipoCondicao() )   comparacaoNumerica()
+
+  // átomo booleano (variável), quando a seguir vem um delimitador lógico/estrutural
+  // cobre: ... ok )   |  ... ok ;   |  if ok abririf   |  while ok abrirwhile   |  ok repetidor/or ...
+  | LOOKAHEAD( <ID> ( <AND> | <OR> | <PARENTES_DIREITA> | <PONTOVIRGULA> | <ABRIRIF> | <ABRIRWHILE> ) )
+    <ID>
 }
 
-void parentesadoBoolOuRel() : {}
-{
-  LOOKAHEAD( <PARENTES_ESQUERDA> expressao() tipoCondicao() )
-    <PARENTES_ESQUERDA> expressao() tipoCondicao() expressao() <PARENTES_DIREITA>
-|
-    <PARENTES_ESQUERDA> expressaoBooleana() <PARENTES_DIREITA>
-}
+
+
 /* ---------------------------------------------------- END EXPRESSAO BOOLEANA ---------------------------------------------------------------------------------*/
 
 void comparacaoNumerica() : {}
@@ -360,4 +491,3 @@ void tipoCondicao() : {}
 }
 
 /* ---------------------------------------------------- STAR TIPO DE CONDIÇÃO ---------------------------------------------------------------------------------*/
-
