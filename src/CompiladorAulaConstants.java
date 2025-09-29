@@ -33,75 +33,77 @@ public interface CompiladorAulaConstants {
   /** RegularExpression Id. */
   int FALSE = 16;
   /** RegularExpression Id. */
-  int AND = 17;
+  int PRINTF = 17;
   /** RegularExpression Id. */
-  int OR = 18;
+  int AND = 18;
   /** RegularExpression Id. */
-  int NOT = 19;
+  int OR = 19;
   /** RegularExpression Id. */
-  int ABRIRELSE = 20;
+  int NOT = 20;
   /** RegularExpression Id. */
-  int FECHARELSE = 21;
+  int ABRIRELSE = 21;
   /** RegularExpression Id. */
-  int ABRIRIF = 22;
+  int FECHARELSE = 22;
   /** RegularExpression Id. */
-  int FECHARIF = 23;
+  int ABRIRIF = 23;
   /** RegularExpression Id. */
-  int WHILE = 24;
+  int FECHARIF = 24;
   /** RegularExpression Id. */
-  int ABRIRWHILE = 25;
+  int WHILE = 25;
   /** RegularExpression Id. */
-  int FECHARWHILE = 26;
+  int ABRIRWHILE = 26;
   /** RegularExpression Id. */
-  int BREAK = 27;
+  int FECHARWHILE = 27;
   /** RegularExpression Id. */
-  int FOR = 28;
+  int BREAK = 28;
   /** RegularExpression Id. */
-  int ABRIRFOR = 29;
+  int FOR = 29;
   /** RegularExpression Id. */
-  int FECHARFOR = 30;
+  int ABRIRFOR = 30;
   /** RegularExpression Id. */
-  int SOMA = 31;
+  int FECHARFOR = 31;
   /** RegularExpression Id. */
-  int SUBTRACAO = 32;
+  int SOMA = 32;
   /** RegularExpression Id. */
-  int MULTIPLICACAO = 33;
+  int SUBTRACAO = 33;
   /** RegularExpression Id. */
-  int DIVISAO = 34;
+  int MULTIPLICACAO = 34;
   /** RegularExpression Id. */
-  int ATRIBUICAO = 35;
+  int DIVISAO = 35;
   /** RegularExpression Id. */
-  int MAIOR = 36;
+  int ATRIBUICAO = 36;
   /** RegularExpression Id. */
-  int MENOR = 37;
+  int MAIOR = 37;
   /** RegularExpression Id. */
-  int MENOR_IGUAL = 38;
+  int MENOR = 38;
   /** RegularExpression Id. */
-  int MAIOR_IGUAL = 39;
+  int MENOR_IGUAL = 39;
   /** RegularExpression Id. */
-  int DIFERENTE = 40;
+  int MAIOR_IGUAL = 40;
   /** RegularExpression Id. */
-  int IGUAL = 41;
+  int DIFERENTE = 41;
   /** RegularExpression Id. */
-  int DECIMAL = 42;
+  int IGUAL = 42;
   /** RegularExpression Id. */
-  int DIGITO = 43;
+  int DECIMAL = 43;
   /** RegularExpression Id. */
-  int ID = 44;
+  int DIGITO = 44;
   /** RegularExpression Id. */
-  int LETRA = 45;
+  int ID = 45;
   /** RegularExpression Id. */
-  int PONTOVIRGULA = 46;
+  int LETRA = 46;
   /** RegularExpression Id. */
-  int VIRGULA = 47;
+  int PONTOVIRGULA = 47;
   /** RegularExpression Id. */
-  int STRING = 48;
+  int VIRGULA = 48;
   /** RegularExpression Id. */
-  int PARENTES_ESQUERDA = 49;
+  int STRING = 49;
   /** RegularExpression Id. */
-  int PARENTES_DIREITA = 50;
+  int PARENTES_ESQUERDA = 50;
   /** RegularExpression Id. */
-  int DELIMITAR_VARCHAR = 51;
+  int PARENTES_DIREITA = 51;
+  /** RegularExpression Id. */
+  int DELIMITAR_VARCHAR = 52;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -125,6 +127,7 @@ public interface CompiladorAulaConstants {
     "\"monark\"",
     "\"tocha_acessa\"",
     "\"tocha_apagada\"",
+    "\"chat\"",
     "\"repetidor\"",
     "\"or\"",
     "\"tocha_invertida\"",

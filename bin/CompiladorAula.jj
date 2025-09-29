@@ -14,14 +14,14 @@ PARSER_BEGIN(CompiladorAula)
 
 public class CompiladorAula {
 
-  /* ===================== Helpers ===================== */
+  /* ===================== Helpers ============================================================================================================================= */
 
-  // Posição amigável (linha, coluna)
+ 
   static String pos(Token t) {
     return (t == null) ? "linha ?, coluna ?" : "linha " + t.beginLine + ", coluna " + t.beginColumn;
   }
 
-  // Remove aspas iniciais/finais e normaliza escapes simples
+  
   static String unquote(String s) {
     if (s == null || s.length() < 2) return s;
     char a = s.charAt(0), b = s.charAt(s.length() - 1);
@@ -31,15 +31,15 @@ public class CompiladorAula {
     return s.replace("\\\"", "\"").replace("\\\\", "\\");
   }
 
-  /* ===================== Sintaxe (ParseException) ===================== */
+  /* ===================== Sintaxe (ParseException) ================================================================================================================= */
 
-  // Mensagem 100% PT-BR para erro sintático do JavaCC
+ 
   static String fmtSintaxe(ParseException e) {
-    // token inesperado é o "próximo" após o último consumido
+    
     Token last = CompiladorAula.token;
     Token inesperado = (last != null) ? last.next : null;
 
-    // Monte a lista de esperados (primeiro símbolo de cada sequência)
+    
     String esperados = "(não disponível)";
     if (e.expectedTokenSequences != null && e.tokenImage != null) {
       java.util.LinkedHashSet<String> uniq = new java.util.LinkedHashSet<>();
@@ -52,7 +52,7 @@ public class CompiladorAula {
       if (!uniq.isEmpty()) esperados = String.join(", ", uniq);
     }
 
-    // Descrição do token encontrado
+    
     String encontrado;
     if (inesperado == null) {
       encontrado = "<EOF>";
@@ -70,9 +70,9 @@ public class CompiladorAula {
          + "Eu esperava um destes: " + esperados + ".";
   }
 
-  /* ===================== Léxico (TokenMgrError) ===================== */
+  /* ===================== Léxico (TokenMgrError) ============================================================================================================ */
 
-  // Regex para extrair linha/coluna/char da mensagem padrão do scanner
+  //xtrair linha/coluna/char da mensagem padrão do scanner
   private static final java.util.regex.Pattern LEX_RE =
       java.util.regex.Pattern.compile(
           "line\\s+(\\d+)\\s*,\\s*column\\s+(\\d+).*?Encountered:\\s*(\".*?\"|'.*?'|<EOF>|[^,\\s]+)\\s*"
@@ -125,11 +125,11 @@ public class CompiladorAula {
       return sb.toString();
     }
 
-    // fallback enxuto em PT-BR
+    // fallback
     return "Erro léxico.";
   }
 
-  /* ===================== Loop interativo ===================== */
+  /* ===================== Loop interativo ======================================================================================================================= */
 
   public static void main(String[] args) throws ParseException {
     System.out.println("Parser build: 2025-09-27-ifstmt-blocos");
@@ -140,26 +140,27 @@ public class CompiladorAula {
       System.out.print("----- >  :");
 
       try {
-        parser.main(); // chama a produção raiz do JavaCC
-
+        
+  		parser.main();
+  
       } catch (ParseException e) {
-        // Erros de sintaxe (parser)
+        // Erros de sintaxe 
         System.out.println("\n" + fmtSintaxe(e));
         CompiladorAula.ReInit(System.in);
 
       } catch (TokenMgrError e) {
-        // Erros léxicos (scanner)
+        // Erros léxicos 
         System.out.println("\n" + fmtLexico(e));
         CompiladorAula.ReInit(System.in);
 
       } catch (Exception e) {
-        // Qualquer outra exceção – mantém PT-BR
+        // Qualquer outra exceção
         System.out.println("\nErro inesperado.");
         if (e.getMessage() != null) System.out.println(e.getMessage());
         CompiladorAula.ReInit(System.in);
 
       } catch (Error e) {
-        // Erros fatais (encerra o loop)
+        // Erros fatais
         System.out.println("\nOops. Erro fatal.");
         if (e.getMessage() != null) System.out.println(e.getMessage());
         break;
@@ -193,6 +194,7 @@ TOKEN : /*PALAVRAS RESERVADAS */
 | < ELSE           : "monark"                             >
 | < TRUE           : "tocha_acessa"                       >
 | < FALSE          : "tocha_apagada"                      >
+| < PRINTF         : "chat"                               >
 | < AND            : "repetidor"                          >
 | < OR             : "or"                                 >
 | < NOT            : "tocha_invertida"                    >
@@ -260,6 +262,7 @@ void comando() : {}
  | whileLoop()
  | forLoop() 
  | breakStmt()
+ | printStmt()
 }
 
 /* ---------------------------------------------------- START BLOCO WHILE ---------------------------------------------------------------------------------*/
@@ -304,7 +307,7 @@ void forInit() : {}
 
 void atribuicaoFor() : {}
 {
-  <ID> <ATRIBUICAO> expressaoGeral()      // igual atribuição, só que SEM ; no fim
+  <ID> <ATRIBUICAO> expressao()      // igual atribuição, só que SEM ; no fim
 }
 
 /* ---------------------------------------------------- END BLOCO FOR ---------------------------------------------------------------------------------*/
@@ -328,6 +331,15 @@ void atribuicao() : {}
   <ID> <ATRIBUICAO> expressaoGeral() <PONTOVIRGULA> 
 }
 /* ---------------------------------------------------- END ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START PRINTF ---------------------------------------------------------------------------------*/
+void printStmt() : {}
+{
+  <PRINTF> <PARENTES_ESQUERDA> <STRING> <PARENTES_DIREITA> <PONTOVIRGULA>
+}
+
+/* ---------------------------------------------------- END PRINTF ---------------------------------------------------------------------------------*/
+
 
 /* ---------------------------------------------------- START CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
 void expressaoGeral() : {}
