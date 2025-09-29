@@ -14,160 +14,33 @@ PARSER_BEGIN(CompiladorAula)
 
 public class CompiladorAula {
 
-  /* ===================== Helpers ============================================================================================================================= */
-
- 
-  static String pos(Token t) {
-    return (t == null) ? "linha ?, coluna ?" : "linha " + t.beginLine + ", coluna " + t.beginColumn;
-  }
-
-  
-  static String unquote(String s) {
-    if (s == null || s.length() < 2) return s;
-    char a = s.charAt(0), b = s.charAt(s.length() - 1);
-    if ((a == '"' && b == '"') || (a == '\'' && b == '\'')) {
-      s = s.substring(1, s.length() - 1);
-    }
-    return s.replace("\\\"", "\"").replace("\\\\", "\\");
-  }
-
-  /* ===================== Sintaxe (ParseException) ================================================================================================================= */
-
- 
-  static String fmtSintaxe(ParseException e) {
-    
-    Token last = CompiladorAula.token;
-    Token inesperado = (last != null) ? last.next : null;
-
-    
-    String esperados = "(não disponível)";
-    if (e.expectedTokenSequences != null && e.tokenImage != null) {
-      java.util.LinkedHashSet<String> uniq = new java.util.LinkedHashSet<>();
-      for (int[] seq : e.expectedTokenSequences) {
-        if (seq.length > 0) {
-          String img = e.tokenImage[seq[0]];
-          uniq.add(unquote(img));
-        }
-      }
-      if (!uniq.isEmpty()) esperados = String.join(", ", uniq);
-    }
-
-    
-    String encontrado;
-    if (inesperado == null) {
-      encontrado = "<EOF>";
-    } else {
-      String nome = (inesperado.kind >= 0 && inesperado.kind < tokenImage.length)
-          ? unquote(tokenImage[inesperado.kind])
-          : ("<" + inesperado.kind + ">");
-      String lexema = (inesperado.image != null) ? (" (lexema: \"" + inesperado.image + "\")") : "";
-      encontrado = nome + lexema;
-    }
-
-    // Mensagem final – sem anexar a string em inglês do JavaCC
-    return "Erro de sintaxe.\n"
-         + "Encontrei: " + encontrado + " em " + pos(inesperado) + ".\n"
-         + "Eu esperava um destes: " + esperados + ".";
-  }
-
-  /* ===================== Léxico (TokenMgrError) ============================================================================================================ */
-
-  //xtrair linha/coluna/char da mensagem padrão do scanner
-  private static final java.util.regex.Pattern LEX_RE =
-      java.util.regex.Pattern.compile(
-          "line\\s+(\\d+)\\s*,\\s*column\\s+(\\d+).*?Encountered:\\s*(\".*?\"|'.*?'|<EOF>|[^,\\s]+)\\s*"
-        + "(?:\\((\\-?\\d+)\\))?\\s*,?\\s*(?:after\\s*:\\s*(\".*?\"|'.*?'))?",
-          java.util.regex.Pattern.DOTALL);
-
-  // Mensagem 100% PT-BR para erro léxico
-  static String fmtLexico(TokenMgrError e) {
-    String raw = e.getMessage();
-    if (raw == null) return "Erro léxico.";
-
-    java.util.regex.Matcher m = LEX_RE.matcher(raw);
-    if (m.find()) {
-      String line = m.group(1), col = m.group(2);
-      String enc  = m.group(3), code = m.group(4), aft = m.group(5);
-
-      String ch = (enc == null) ? "" : enc.trim();
-      // tira aspas do encontrado
-      if (ch.length() >= 2 && (
-          (ch.charAt(0) == '"' && ch.charAt(ch.length()-1) == '"') ||
-          (ch.charAt(0) == '\'' && ch.charAt(ch.length()-1) == '\''))) {
-        ch = ch.substring(1, ch.length() - 1);
-      }
-      // se veio código numérico, tenta reconstruir o caractere
-      if (ch.matches("\\d+") && code != null) {
-        try { ch = new String(Character.toChars(Integer.parseInt(code))); } catch (Exception ignore) {}
-      }
-      // normaliza escapes visuais
-      ch = ch.replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t")
-             .replace("\\\"", "\"").replace("\\\\", "\\");
-
-      String unicode = "";
-      if (code != null) {
-        try {
-          int cp = Integer.parseInt(code);
-          unicode = String.format(" (U+%04X, %d)", cp, cp);
-        } catch (Exception ignore) {}
-      }
-
-      StringBuilder sb = new StringBuilder();
-      sb.append("Erro léxico na ").append("linha ").append(line)
-        .append(", coluna ").append(col).append(". ");
-      sb.append("Encontrei: ")
-        .append("<EOF>".equals(enc) ? "<EOF> (fim de arquivo)" : "'" + ch + "'" + unicode)
-        .append(".");
-      if (aft != null) {
-        String after = unquote(aft);
-        sb.append(" Após: '").append(after).append("'.");
-      }
-      return sb.toString();
-    }
-
-    // fallback
-    return "Erro léxico.";
-  }
-
-  /* ===================== Loop interativo ======================================================================================================================= */
-
   public static void main(String[] args) throws ParseException {
-    System.out.println("Parser build: 2025-09-27-ifstmt-blocos");
+        // Cria o parser usando a entrada padrão
+        CompiladorAula parser = new CompiladorAula(System.in);
 
-    CompiladorAula parser = new CompiladorAula(System.in);
-    while (true) {
-      System.out.println("Welcome to the world! Start New World");
-      System.out.print("----- >  :");
+        while (true) {
+            System.out.println("WELCOME TO THE WORLD");
+            System.out.print("Start new world ----- > ");
 
-      try {
-        
-  		parser.main();
-  
-      } catch (ParseException e) {
-        // Erros de sintaxe 
-        System.out.println("\n" + fmtSintaxe(e));
-        CompiladorAula.ReInit(System.in);
-
-      } catch (TokenMgrError e) {
-        // Erros léxicos 
-        System.out.println("\n" + fmtLexico(e));
-        CompiladorAula.ReInit(System.in);
-
-      } catch (Exception e) {
-        // Qualquer outra exceção
-        System.out.println("\nErro inesperado.");
-        if (e.getMessage() != null) System.out.println(e.getMessage());
-        CompiladorAula.ReInit(System.in);
-
-      } catch (Error e) {
-        // Erros fatais
-        System.out.println("\nOops. Erro fatal.");
-        if (e.getMessage() != null) System.out.println(e.getMessage());
-        break;
-      }
+            try {
+                // Chama a regra principal do parser
+                parser.main();
+                System.out.println("Entering the world...");
+            } catch (Exception e) {
+                // Trata erros de parsing e reinicia o parser
+                System.out.println("\nVocê morreu!");
+                System.out.println(e.getMessage());
+                parser.ReInit(System.in);
+            } catch (Error e) {
+                // Trata erros graves e encerra o loop
+                System.out.println("\nMorreu pro void");
+                System.out.println(e.getMessage());
+                break;
+            }
+        }
     }
   }
-}
+
 
 
 PARSER_END(CompiladorAula)
