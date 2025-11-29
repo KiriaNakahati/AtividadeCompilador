@@ -1,47 +1,246 @@
 /**
  * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
  */
+
 options
 {
-  static = true;
+  static = false;
 }
 
 PARSER_BEGIN(CompiladorAula)
 
+public class CompiladorAula {
 
-public class CompiladorAula
-{
-  public static void main(String args []) throws ParseException
-  {
-    CompiladorAula parser = new CompiladorAula(System.in);
-    while (true)
-    {
-      System.out.println("Welcome to the world! Start New World");
-      System.out.print("----- >  :");
-      try
-      {
-        parser.main();
-      }
-      catch (Exception e)
-      {
-        System.out.println("Deu ruim."); /*falta melhorar o tratamento de erros específicos do compilador*/
-        System.out.println(e.getMessage());
-        CompiladorAula.ReInit(System.in);
-      }
-      catch (TokenMgrError e)
-	  {
-        System.out.println("Erro léxico, tu não leu a gramática né.");
-        System.out.println(e.getMessage());
-        CompiladorAula.ReInit(System.in);
-	  }
-      catch (Error e)
-      {
-        System.out.println("Oops.");
-        System.out.println(e.getMessage());
-        break;
-      }
+  
+    // Flag para saber se houve erro sintático durante a análise
+    private boolean houveErroSintatico = false;
+
+    public boolean houveErroSintatico() {
+        return houveErroSintatico;
     }
-  }
+
+    public void limparErrosSintaticos() {
+        houveErroSintatico = false;
+    }
+
+    /* Registra um erro sintático (por enquanto só marca a flag e imprime algo simples) */
+    void registrarErroSintatico(ParseException e, String contexto) {
+        houveErroSintatico = true;
+
+        Token errorToken = (e.currentToken != null) ? e.currentToken.next : null;
+        String foundToken = (errorToken != null) ? errorToken.image : "EOF";
+        int line   = (errorToken != null) ? errorToken.beginLine   : 0;
+        int column = (errorToken != null) ? errorToken.beginColumn : 0;
+
+        System.out.println("\n💀 ERRO SINTÁTICO (modo pânico) no mundo Minecraft!");
+        System.out.println(" Contexto: " + contexto);
+        System.out.println(" Localização: Linha " + line + ", Coluna " + column);
+        System.out.println(" Token encontrado: '" + foundToken + "'");
+    }
+
+    /*
+     * Modo pânico: descarta tokens até encontrar um ponto de sincronização
+     * (fim de comando ou início de um novo comando/bloco).
+     */
+    void sincronizarComando() {
+        Token t;
+        while (true) {
+            t = getNextToken(); // avança um token
+
+            if (t.kind == EOF) {               // fim do arquivo
+                break;
+            }
+
+            // Fim de comando
+            if (t.kind == PONTOVIRGULA) {
+                break;
+            }
+
+            // Início de novos comandos/declarações/blocos
+            if (t.kind == IF          // vinicius13
+             || t.kind == WHILE       // em_busca_da_casa_automatica
+             || t.kind == FOR         // intro_do_venom_extreme
+             || t.kind == PRINTF      // chat
+             || t.kind == TIPOINTEIRO // pedra
+             || t.kind == TIPOFLUTUANTE // agua
+             || t.kind == TIPOTEXTO   // placa
+             || t.kind == TIPOBINARIO // redstone
+             || t.kind == BEDROCK     // fim do mundo
+             || t.kind == FECHARIF    // gamemode_survival
+             || t.kind == FECHARWHILE // farm_de_cana_de_acucar
+             || t.kind == FECHARFOR   // portal_do_nether
+            ) {
+                // chegou num ponto "seguro": para de descartar
+                break;
+            }
+        }
+        // após isso, o parser segue a partir do ponto onde parou
+	}
+
+  public static void main(String[] args) throws ParseException {
+        CompiladorAula parser = new CompiladorAula(System.in);
+
+        while (true) {
+            System.out.println("WELCOME TO THE WORLD MUITO FODDAAAAAAAA");
+            System.out.print("Start new world ----- > ");
+
+            try {
+                parser.limparErrosSintaticos();   // zera flag antes da análise
+
+    			parser.main();                    // roda o parser
+
+    			if (parser.houveErroSintatico()) {
+      			  System.out.println("\n❌ Mundo NÃO aceito pela linguagem Minecraft.");
+        			System.out.println("Veja as mensagens de erro acima (modo pânico).");
+    			}
+    			else {
+        			System.out.println("✅ Entering the world... Mundo aceito com sucesso!");
+   				 }
+            } catch (ParseException e) {
+                // Extrair informações de token do ParseException
+                Token errorToken = e.currentToken != null ? e.currentToken.next : null;
+                String foundToken = errorToken != null ? errorToken.image : "EOF";
+                int line = errorToken != null ? errorToken.beginLine : 0;
+                int column = errorToken != null ? errorToken.beginColumn : 0;
+                
+                // Extrair tokens esperados do ParseException
+                StringBuilder expectedTokens = new StringBuilder();
+                if (e.expectedTokenSequences != null && e.tokenImage != null) {
+                    for (int i = 0; i < e.expectedTokenSequences.length && i < 3; i++) {
+                        if (i > 0) expectedTokens.append(", ");
+                        if (e.expectedTokenSequences[i].length > 0) {
+                            int tokenId = e.expectedTokenSequences[i][0];
+                            if (tokenId < e.tokenImage.length) {
+                                expectedTokens.append(e.tokenImage[tokenId].replace("\"", ""));
+                            }
+                        }
+                    }
+                }
+               
+                String errorMsg = e.getMessage().toLowerCase();
+                
+                // Cabeçalho comum com informações de token
+                System.out.println("\n💀 ERRO SINTÁTICO no mundo Minecraft!");
+                System.out.println(" Localização: Linha " + line + ", Coluna " + column);
+                System.out.println(" Token encontrado: '" + foundToken + "'");
+                if (expectedTokens.length() > 0) {
+                    System.out.println(" Token(s) esperado(s): " + expectedTokens.toString());
+                }
+                
+                // Mensagens específicas por tipo de erro
+                if (errorMsg.contains("createworld")) {
+                    System.out.println(" CONTEXTO: Você esqueceu de criar o mundo!");
+                    System.out.println(" SOLUÇÃO: Use 'createworld <nome>' para começar sua aventura");
+                } else if (errorMsg.contains("overworld")) {
+                    System.out.println(" CONTEXTO: Portal para o Overworld não encontrado!");
+                    System.out.println(" SOLUÇÃO: Use 'overworld' para entrar na dimensão principal");
+                } else if (errorMsg.contains("bedrock")) {
+                    System.out.println(" CONTEXTO: Bedrock não encontrado - mundo instável!");
+                    System.out.println(" SOLUÇÃO: Termine seu código com 'bedrock' para estabilizar o mundo");
+                } else if (errorMsg.contains("pontovirgula") || errorMsg.contains(";")) {
+                    System.out.println(" CONTEXTO: Comando incompleto - faltou terminar a linha!");
+                    System.out.println(" SOLUÇÃO: Adicione ';' no final do comando");
+                } else if (errorMsg.contains("gamemode_creative") || errorMsg.contains("gamemode_survival")) {
+                    System.out.println(" CONTEXTO: Modo de jogo inválido!");
+                    System.out.println(" SOLUÇÃO: Use 'gamemode_creative' para abrir blocos condicionais");
+                } else if (errorMsg.contains("vinicius13")) {
+                    System.out.println(" CONTEXTO: Condição if mal formada!");
+                    System.out.println(" SOLUÇÃO: Use 'vinicius13 <condição> gamemode_creative build'");
+                } else if (errorMsg.contains("parentes")) {
+                    System.out.println(" CONTEXTO: Parênteses mal formados!");
+                    System.out.println(" SOLUÇÃO: Verifique se todos os '(' têm seus ')' correspondentes");
+                } else if (errorMsg.contains("string")) {
+                    System.out.println(" CONTEXTO: String mal formada!");
+                    System.out.println(" SOLUÇÃO: Use aspas simples: 'sua mensagem aqui'");
+                } else {
+                    System.out.println(" CONTEXTO: Sintaxe não reconhecida no mundo Minecraft!");
+                    System.out.println(" SOLUÇÃO: Consulte a documentação da linguagem");
+                }
+                
+				parser.ReInit(System.in);
+            } catch (TokenMgrError e) {
+                // Extrair informações de linha e coluna do TokenMgrError
+                String errorMsg = e.getMessage();
+                int line = 0, column = 0;
+                char foundChar = '?';
+                
+                // Extrair linha e coluna da mensagem do TokenMgrError
+                if (errorMsg.contains("line ") && errorMsg.contains("column ")) {
+                    try {
+                        String[] parts = errorMsg.split("line ")[1].split(",");
+                        line = Integer.parseInt(parts[0].trim());
+                        column = Integer.parseInt(parts[1].split("column ")[1].split("\\.")[0].trim());
+                    } catch (Exception ex) {
+                        // Se falhar, usar valores padrão
+                    }
+                }
+                
+                // Extrair caractere encontrado
+                if (errorMsg.contains("Encountered: '") && !errorMsg.contains("<EOF>")) {
+                    try {
+                        String charPart = errorMsg.split("Encountered: '")[1];
+                        if (charPart.length() > 0) {
+                            foundChar = charPart.charAt(0);
+                        }
+                    } catch (Exception ex) {
+                        // Se falhar, usar valor padrão
+                    }
+                }
+                
+                // Cabeçalho comum com informações de token
+                System.out.println("\n💀 ERRO LÉXICO no mundo Minecraft!");
+                System.out.println(" Localização: Linha " + line + ", Coluna " + column);
+                System.out.println(" Caractere encontrado: '" + foundChar + "'");
+                System.out.println(" Esperado: caracteres válidos da linguagem Minecraft");
+                
+                if (errorMsg.contains("Lexical error")) {
+                    System.out.println(" CONTEXTO: Caractere não reconhecido no mundo Minecraft!");
+                    System.out.println(" SOLUÇÃO: Use apenas letras, números, '_', operadores válidos");
+                    System.out.println(" OPERADORES: combine, -, *, /, <-, stronger, weaker, =, <>, etc.");
+                } else if (e.errorCode == TokenMgrError.LEXICAL_ERROR) {
+                    System.out.println(" CONTEXTO: Erro de análise lexical!");
+                    System.out.println(" SOLUÇÃO: Verifique caracteres especiais ou encoding do arquivo");
+                } else {
+                    System.out.println(" CONTEXTO: Erro do analisador de tokens");
+                    System.out.println(" DETALHES: " + errorMsg);
+                }
+                
+                parser.ReInit(System.in);
+            } catch (Exception e) {
+                // Erros gerais com tema Minecraft
+                System.out.println("\n💀 VOCÊ MORREU!");
+                System.out.println(" Causa da morte: " + e.getClass().getSimpleName());
+                
+                if (e instanceof NullPointerException) {
+                    System.out.println(" Você tentou usar uma variável que não existe (como tentar usar um item vazio)");
+                } else if (e instanceof NumberFormatException) {
+                    System.out.println(" Número inválido detectado - verifique seus valores numéricos");
+                } else if (e instanceof ArrayIndexOutOfBoundsException) {
+                    System.out.println(" Você tentou acessar um slot do inventário que não existe");
+                } else {
+                    System.out.println(" Erro inesperado durante a execução: " + e.getMessage());
+                }
+                
+                System.out.println(" Respawnando...");
+                parser.ReInit(System.in);
+            } catch (Error e) {
+                // Erros fatais
+                System.out.println("\n💀 VOCÊ CAIU NO VOID!");
+                System.out.println(" Erro fatal do sistema - mundo corrompido!");
+                
+                if (e instanceof StackOverflowError) {
+                    System.out.println(" Stack overflow - recursão infinita detectada (como um loop de redstone infinito)");
+                } else if (e instanceof OutOfMemoryError) {
+                    System.out.println(" Memória esgotada - muito processamento (como muitos TNTs explodindo)");
+                } else {
+                    System.out.println(" Erro crítico: " + e.getMessage());
+                }
+                
+                System.out.println("🔴 Saindo do jogo...");
+                break;
+            }
+        }
+    }
 }
 
 PARSER_END(CompiladorAula)
@@ -62,25 +261,28 @@ TOKEN : /*PALAVRAS RESERVADAS */
 | < TIPOINTEIRO    : "pedra"                              >
 | < TIPOFLUTUANTE  : "agua"                               >
 | < TIPOTEXTO      : "placa"                              >
-| < TIPOGRAVETO    : "graveto"                            >
-| < TIPODIAMANTE   : "diamante"                           >
 | < TIPOBINARIO    : "redstone"                           >
 | < IF             : "vinicius13"                         >
 | < THEN           : "build"                              >
 | < ELSE           : "monark"                             >
 | < TRUE           : "tocha_acessa"                       >
 | < FALSE          : "tocha_apagada"                      >
+| < PRINTF         : "chat"                               >
+| < CONTINUE       : "isolaaados"                         >
 | < AND            : "repetidor"                          >
 | < OR             : "or"                                 >
 | < NOT            : "tocha_invertida"                    >
 | < ABRIRELSE      : "acordaaaa_gente"                    >
 | < FECHARELSE     : "ja_tamo_na_ditadura"                >
-| < ABRIRIF        : "abririf"                            >
-| < FECHARIF       : "fecharif"                           >
+| < ABRIRIF        : "gamemode_creative"                  >
+| < FECHARIF       : "gamemode_survival"                  >
 | < WHILE          : "em_busca_da_casa_automatica"        >
-| < ABRIRWHILE     : "abrirwhile"                         >
-| < FECHARWHILE    : "fecharwhile"                        >
-| < BREAK          : "instakill"                          >
+| < ABRIRWHILE     : "farm_de_ferro"                      >
+| < FECHARWHILE    : "farm_de_cana_de_acucar"             >
+| < BREAK          : "kill"                               >
+| < FOR            : "intro_do_venom_extreme"             >
+| < ABRIRFOR       : "portal_do_aether"                   >
+| < FECHARFOR      : "portal_do_nether"                   >
 } 
 
 TOKEN : /*OPERADORES*/
@@ -109,10 +311,8 @@ TOKEN :
 | < STRING             : "'" (~["'"])* "'"                                                   >
 | < PARENTES_ESQUERDA  : "("                                                                 >
 | < PARENTES_DIREITA   : ")"                                                                 >
-| < DELIMITAR_VARCHAR  : "'"                                                                 >
-
+| < DELIMITAR_VARCHAR  : "'"                                                                 > 
 }
-
 
 /* ---------------------------------------------------- START BLOCO PRINCIPAL ---------------------------------------------------------------------------------*/
 void main() : {}
@@ -123,7 +323,9 @@ void main() : {}
 
 void bloco() : { }
 {
-  <OVERWORLD> (declaracaoVariavel())* (comando())* <BEDROCK> 
+  <OVERWORLD>
+  (sentencaRecuperavel())* 
+  <BEDROCK>
 }
 
 /* ---------------------------------------------------- END BLOCO PRINCIPAL ---------------------------------------------------------------------------------*/
@@ -131,142 +333,207 @@ void bloco() : { }
 void comando() : {} 
 {
   atribuicao()
- | LOOKAHEAD( <IF>  expressaoBooleana() < ABRIRIF > <THEN> (comando())+ < FECHARIF > <ELSE> ) ifThenElse()
- | ifThen()
+ | ifStmt()
  | whileLoop()
+ | forLoop() 
  | breakStmt()
+ | printStmt()
+ | continueStmt()
 }
 
+/* Uma sentença dentro de um bloco: declaração ou comando */
+void sentenca() : {}
+{
+    declaracaoVariavel()
+  | comando()
+}
+
+/** Sentença com recuperação em modo pânico */
+void sentencaRecuperavel() : {}
+{
+  try
+  {
+    sentenca()
+  }
+  catch (ParseException e)
+  {
+    {
+      registrarErroSintatico(e, "Erro em uma sentença dentro do bloco (overworld/if/while/for).");
+      sincronizarComando();
+    }
+  }
+}
+/* ---------------------------------------------------- START BLOCO WHILE ---------------------------------------------------------------------------------*/
 void whileLoop() : {}
 {
-  <WHILE> expressaoBooleana() <ABRIRWHILE> (comando())+ <FECHARWHILE>
+  <WHILE> expressao()
+  <ABRIRWHILE> blocoWhile() <FECHARWHILE>
 }
 
-/* Sintático: aceita sempre; a regra “só dentro de loop” é semântica */
+void blocoWhile() : {} { ( sentencaRecuperavel())+ }
+
 void breakStmt() : {}
 {
   <BREAK> <PONTOVIRGULA>
 }
 
+/* ---------------------------------------------------- END BLOCO WHILE ---------------------------------------------------------------------------------*/
+
+void continueStmt() : {} { <CONTINUE> <PONTOVIRGULA> }
+
+/* ---------------------------------------------------- START BLOCO FOR ---------------------------------------------------------------------------------*/
+void forLoop() : {}
+{
+  <FOR> <PARENTES_ESQUERDA>
+  forInitOpt() <PONTOVIRGULA>
+  forCondOpt() <PONTOVIRGULA>
+  forUpdateOpt()
+  <PARENTES_DIREITA>
+  <ABRIRFOR> blocoFor() <FECHARFOR>
+}
+
+void blocoFor() : {} { ( sentencaRecuperavel())+ }
+
+void forInitOpt()   : {} { ( forInit() )? }
+void forCondOpt()   : {} { ( expressao() )? }
+void forUpdateOpt() : {} { ( atribuicaoFor() ( <VIRGULA> atribuicaoFor() )* )? }
+
+void forInit() : {}
+{
+    tipoDado() listaDeclaracoes()
+  | atribuicaoFor()
+}
+
+void atribuicaoFor() : {}
+{
+  <ID> <ATRIBUICAO> expressao()
+}
+
+/* ---------------------------------------------------- END BLOCO FOR ---------------------------------------------------------------------------------*/
 
 /* ---------------------------------------------------- START ESTRUTURA DE CONTROLE ---------------------------------------------------------------------------------*/
-void ifThenElse() : {}
+void ifStmt() : {}
 {
-  <IF>  expressaoBooleana() < ABRIRIF > <THEN> (comando())+ < FECHARIF > <ELSE> <ABRIRELSE > comando() < FECHARELSE >
+  <IF> expressao()
+  <ABRIRIF> <THEN>
+  blocoIf()
+  <FECHARIF>
+  ( elseClause() )?
 }
 
-void ifThen() : {}
+void elseClause() : {}
 {
-  <IF>  expressaoBooleana() < ABRIRIF > <THEN> (comando())+ < FECHARIF >
+  <ELSE> <ABRIRELSE>
+  blocoElse()
+  <FECHARELSE>
 }
+
+void blocoIf()   : {} { (sentencaRecuperavel())+ }
+void blocoElse() : {} { (sentencaRecuperavel())+ }
+
 /* ---------------------------------------------------- END ESTRUTURA DE CONTROLE ---------------------------------------------------------------------------------*/
 
 /* ---------------------------------------------------- START ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
 void atribuicao() : {}
 {
-  <ID> <ATRIBUICAO> expressaoGeral() <PONTOVIRGULA>
+  <ID> <ATRIBUICAO> expressao() <PONTOVIRGULA>
 }
-
 /* ---------------------------------------------------- END ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
 
-/* ---------------------------------------------------- START CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
-void expressaoGeral() : {}
+/* ---------------------------------------------------- START PRINTF ---------------------------------------------------------------------------------*/
+void printStmt() : {}
 {
-    expressaoTexto()
-
-  // booleano óbvio
-  | LOOKAHEAD( <TRUE> | <FALSE> | <NOT> )
-      expressaoBooleana()
-
-  // (ID opRel ...) ou (DECIMAL opRel ...) logo após "("
-  | LOOKAHEAD( <PARENTES_ESQUERDA> <ID> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
-      expressaoBooleana()
-  | LOOKAHEAD( <PARENTES_ESQUERDA> <DECIMAL> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
-      expressaoBooleana()
-
-  // ((ID opRel ...)) ou ((DECIMAL opRel ...)) — parêntese duplo com comparação logo no segundo "("
-  | LOOKAHEAD( <PARENTES_ESQUERDA> <PARENTES_ESQUERDA> <ID> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
-      expressaoBooleana()
-  | LOOKAHEAD( <PARENTES_ESQUERDA> <PARENTES_ESQUERDA> <DECIMAL> ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_IGUAL> | <MAIOR_IGUAL> ) )
-      expressaoBooleana()
-
-  // ( <exprArit> opRel <exprArit> )  — p.ex. (a combine 1 stronger b - 2)
-  | LOOKAHEAD( <PARENTES_ESQUERDA> expressao() tipoCondicao() )
-      expressaoBooleana()
-
-  // <exprArit> opRel <exprArit> — sem parênteses
-  | LOOKAHEAD( expressao() tipoCondicao() )
-      expressaoBooleana()
-
-  // fallback: numérica
-  | expressao()
+  <PRINTF> <PARENTES_ESQUERDA> <STRING> <PARENTES_DIREITA> <PONTOVIRGULA>
 }
 
-/* ---------------------------------------------------- END CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
+/* ---------------------------------------------------- END PRINTF ---------------------------------------------------------------------------------*/
 
-/* ---------------------------------------------------- START EXPRESSAO NÚMERICA ---------------------------------------------------------------------------------*/
+/* ---------------------------------------------------- START CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
 
-/* Expressões numéricas (somente números, variáveis e parênteses) */
+/* ---------------------------------------------------- START EXPRESSOES (LL(1)) ------------------------------*/
+
+// Expressão completa (nível mais alto: OR)
 void expressao() : {}
 {
-  termoNumerico() ( ( <SOMA> | <SUBTRACAO> ) termoNumerico() )*
+  exprOr()
 }
 
-void termoNumerico() : {}
+// exprOr -> exprAnd (OR exprAnd)*
+void exprOr() : {}
 {
-  fatorNumerico() ( ( <MULTIPLICACAO> | <DIVISAO> ) fatorNumerico() )*
+  exprAnd() exprOrLinha()
 }
 
-void fatorNumerico() : {}
+void exprOrLinha() : {}
 {
-  <ID> | <DECIMAL> | <PARENTES_ESQUERDA> expressao() <PARENTES_DIREITA>
+  ( <OR> exprAnd() exprOrLinha() )?
 }
 
-/* ---------------------------------------------------- END EXPRESSAO NUMÉRICA ---------------------------------------------------------------------------------*/
-
-/* ---------------------------------------------------- START EXPRESSAO TEXTO ---------------------------------------------------------------------------------*/
-
-
-void expressaoTexto() : {}
+// exprAnd -> exprRel (AND exprRel)*
+void exprAnd() : {}
 {
-  < STRING > 
+  exprRel() exprAndLinha()
 }
-/* ---------------------------------------------------- END EXPRESSAO TEXTO ---------------------------------------------------------------------------------*/
 
-/* ---------------------------------------------------- START EXPRESSAO BOOLEANA ---------------------------------------------------------------------------------*/
-
-void expressaoBooleana() : {}
+void exprAndLinha() : {}
 {
-  termoBooleano() ( <OR> termoBooleano() )*
+  ( <AND> exprRel() exprAndLinha() )?
 }
 
-void termoBooleano() : {}
+// exprRel -> exprAditiva (RelOp exprAditiva)?
+void exprRel() : {}
 {
-  fatorBooleano() ( <AND> fatorBooleano() )*
+  exprAditiva() exprRelLinha()
 }
 
-void fatorBooleano() : {}
+void exprRelLinha() : {}
 {
-  <TRUE>
-| <FALSE>
-| <NOT> fatorBooleano() 
-| parentesadoBoolOuRel()
-| comparacaoNumerica()
+  ( tipoCondicao() exprAditiva() )?
 }
 
-void parentesadoBoolOuRel() : {}
+// exprAditiva -> exprMultiplicativa ( (+|-) exprMultiplicativa )*
+void exprAditiva() : {}
 {
-  LOOKAHEAD( <PARENTES_ESQUERDA> expressao() tipoCondicao() )
-    <PARENTES_ESQUERDA> expressao() tipoCondicao() expressao() <PARENTES_DIREITA>
-|
-    <PARENTES_ESQUERDA> expressaoBooleana() <PARENTES_DIREITA>
+  exprMultiplicativa() exprAditivaLinha()
 }
-/* ---------------------------------------------------- END EXPRESSAO BOOLEANA ---------------------------------------------------------------------------------*/
 
-void comparacaoNumerica() : {}
+void exprAditivaLinha() : {}
 {
-  expressao() tipoCondicao() expressao()
+  ( ( <SOMA> | <SUBTRACAO> ) exprMultiplicativa() exprAditivaLinha() )?
 }
+
+// exprMultiplicativa -> exprUnaria ( (*|/) exprUnaria )*
+void exprMultiplicativa() : {}
+{
+  exprUnaria() exprMultiplicativaLinha()
+}
+
+void exprMultiplicativaLinha() : {}
+{
+  ( ( <MULTIPLICACAO> | <DIVISAO> ) exprUnaria() exprMultiplicativaLinha() )?
+}
+
+// exprUnaria -> NOT exprUnaria | primária
+void exprUnaria() : {}
+{
+    <NOT> exprUnaria()
+  | exprPrimaria()
+}
+
+// primária -> ID | DECIMAL | STRING | TRUE | FALSE | mudanca completa tenho que testar todos os casos 
+void exprPrimaria() : {}
+{
+    <ID>
+  | <DECIMAL>
+  | <STRING>
+  | <TRUE>
+  | <FALSE>
+  | <PARENTES_ESQUERDA> expressao() <PARENTES_DIREITA>
+}
+
+/* ---------------------------------------------------- END EXPRESSOES (LL(1)) --------------------------------*/
+
+/* ---------------------------------------------------- END CONTROLE DE EXPRESSÕES ---------------------------------------------------------------------------------*/
 
 /* ---------------------------------------------------- START DECLARACAO VARIAVEL ---------------------------------------------------------------------------------*/
 
@@ -282,7 +549,7 @@ void listaDeclaracoes() : {}
 
 void declaracaoUnica() : {}
 {
-  <ID> ( <ATRIBUICAO>  expressaoGeral() )?
+  <ID> ( <ATRIBUICAO>  expressao() )?
 }
 
 /* ---------------------------------------------------- END DECLARACAO VARIAVEL ---------------------------------------------------------------------------------*/
@@ -291,7 +558,7 @@ void declaracaoUnica() : {}
 
 void tipoDado() : {} 
 {
-	< TIPOINTEIRO > | <  TIPOBINARIO > | < TIPOTEXTO > | < TIPOFLUTUANTE > | < TIPOGRAVETO > | < TIPODIAMANTE >
+  < TIPOINTEIRO > | <  TIPOBINARIO > | < TIPOTEXTO > | < TIPOFLUTUANTE >
 }
 /* ---------------------------------------------------- END TIPOS DE DADOS ---------------------------------------------------------------------------------*/
 
@@ -299,8 +566,7 @@ void tipoDado() : {}
 
 void tipoCondicao() : {} 
 {
-	<MAIOR> | <MENOR> | <MAIOR_IGUAL> | <MENOR_IGUAL> | <IGUAL> | <DIFERENTE> 
+  <MAIOR> | <MENOR> | <MAIOR_IGUAL> | <MENOR_IGUAL> | <IGUAL> | <DIFERENTE> 
 }
 
 /* ---------------------------------------------------- STAR TIPO DE CONDIÇÃO ---------------------------------------------------------------------------------*/
-
