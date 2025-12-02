@@ -1,0 +1,914 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+
+options
+{
+  static = true;
+}
+
+PARSER_BEGIN(CompiladorAula)
+package parser;
+
+import recovery.*;
+import view.Tela;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.FileWriter;
+import java.io.Reader;
+import java.io.StringReader;
+
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+
+import controleDeArquivos.CreateFile;
+
+public class CompiladorAula {
+
+    // janela principal da aplicação
+    static final Tela window = new Tela();
+
+    // controle global de erro para o modo pânico
+    static Token lastError = null;
+    static boolean eof = false;
+
+	static boolean parserInitialized = false;
+
+	private static void initParser(Reader r) {
+    if (!parserInitialized) {
+        // primeira vez: pode chamar o construtor
+        new CompiladorAula(r);
+        parserInitialized = true;
+    } else {
+        // nas próximas vezes: só ReInit
+        CompiladorAula.ReInit(r);
+    }
+}
+    // ===================== MAIN: abre a interface =====================
+    public static void main(String[] args) {
+        // mostra a janela
+        window.setVisible(true);
+
+        // botão "Compilar" chama inicia()
+		window.getCompilar().addActionListener(
+    new java.awt.event.ActionListener() {
+        @Override
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            // limpa console + árvore
+            window.setVazioConsoleMsg();
+            // chama o compilador
+            inicia();
+        }
+    });
+    }
+
+    // ===================== INICIA A COMPILAÇÃO =====================
+static void inicia() {
+    // pega o código digitado na interface
+    String codigo = window.getTextArquivo().getText();
+
+    // limpa console + árvore sintática
+    window.setVazioConsoleMsg();
+
+    // ======================================================
+    // 1) LISTA OS TOKENS RECONHECIDOS
+    // ======================================================
+
+    // inicializa o parser para essa entrada
+    Reader tokensReader = new StringReader(codigo);
+    initParser(tokensReader);   // usa new só da primeira vez, depois ReInit
+
+    try {
+        window.setConsole("TOKENS RECONHECIDOS:\n");
+
+        Token t;
+        while (true) {
+            // usa o scanner do próprio parser
+            t = CompiladorAula.getNextToken();
+            if (t.kind == EOF) {
+                break;
+            }
+
+            window.setConsole(
+                "Linha " + t.beginLine +
+                ", Coluna " + t.beginColumn +
+                "  ->  " + tokenImage[t.kind].replace("\"", "") +
+                "  [" + t.image + "]\n"
+            );
+        }
+    } catch (TokenMgrError e) {
+        window.setConsole("\nErro léxico durante listagem de tokens: "
+                          + e.getMessage() + "\n");
+    }
+
+    // ======================================================
+    // 2) RODA A ANÁLISE SINTÁTICA (modo pânico + árvore)
+    // ======================================================
+
+    // re-inicializa o parser com o mesmo código para a parte sintática
+    Reader parseReader = new StringReader(codigo);
+    CompiladorAula.ReInit(parseReader);
+
+    // reseta flags globais para o modo pânico
+    lastError = null;
+    eof = false;
+
+    try {
+        // chama o símbolo inicial da gramática (seu main da linguagem)
+        SimpleNode raiz = CompiladorAula.main();
+        // desenha árvore sintática na área "Arvore Sintática"
+        ArvoreSintatica.dump(raiz, "->", window);  
+    }
+    catch (ParseException e) {
+        // se ainda escapou algum erro sintático, mostra aqui
+        window.setConsole("\nErro sintático não recuperado: "
+                          + e.getMessage() + "\n");
+    }
+    catch (TokenMgrError e) {
+        window.setConsole("\nErro léxico durante análise: "
+                          + e.getMessage() + "\n");
+    }
+    catch (Exception e) {
+        window.setConsole("\nErro inesperado: " + e.getClass().getSimpleName()
+                          + " - " + e.getMessage() + "\n");
+    }
+
+    
+}
+
+
+
+    // ===================== FUNÇÃO AUXILIAR im() =====================
+    static public String im(int x) {
+        int k;
+        String s = tokenImage[x];
+        k = s.lastIndexOf("\"");
+        try {
+            s = s.substring(1, k);
+        } catch (StringIndexOutOfBoundsException e) {
+        }
+        return s;
+    }
+
+    // ===================== RECUPERAÇÃO EM MODO PÂNICO =====================
+    static void consumeUntil(RecoverySet g,
+                             ParseException e,
+                             String met)
+            throws ParseEOFException, ParseException {
+
+        Token tok;
+
+        System.out.println();
+        window.setConsole("\n\n*** " + met + " ***");
+        window.setConsole("\n     Conjunto de sincronização: " + g);
+
+        if (g == null) {
+            throw e;
+        }
+
+        tok = getToken(1); // token corrente
+
+        while (!eof) {
+            if (g.contains(tok.kind)) {
+                window.setConsole("\n     Encontrado token de sincronização: " + im(tok.kind));
+                break;
+            }
+
+            window.setConsole("\n     Ignorando o token: " + im(tok.kind));
+            getNextToken();
+            tok = getToken(1);
+
+            if (tok.kind == EOF && !g.contains(EOF)) {
+                eof = true;
+            }
+        }
+
+        if (tok != lastError) {
+            System.out.println(e.getMessage());
+            window.setConsole("\n" + e.getMessage());
+            lastError = tok;
+        }
+
+        if (eof) {
+            throw new ParseEOFException("Encontrei EOF onde não deveria.");
+        }
+    }
+}
+
+
+PARSER_END(CompiladorAula)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+TOKEN : /*PALAVRAS RESERVADAS */
+{
+  < CREATEWORLD    : "createworld"                        >
+| < OVERWORLD      : "overworld"                          >
+| < BEDROCK        : "bedrock"                            >
+| < TIPOINTEIRO    : "pedra"                              >
+| < TIPOFLUTUANTE  : "agua"                               >
+| < TIPOTEXTO      : "placa"                              >
+| < TIPOBINARIO    : "redstone"                           >
+| < IF             : "vinicius13"                         >
+| < THEN           : "build"                              >
+| < ELSE           : "monark"                             >
+| < TRUE           : "tocha_acessa"                       >
+| < FALSE          : "tocha_apagada"                      >
+| < PRINTF         : "chat"                               >
+| < CONTINUE       : "isolaaados"                         >
+| < AND            : "repetidor"                          >
+| < OR             : "or"                                 >
+| < NOT            : "tocha_invertida"                    >
+| < ABRIRELSE      : "acordaaaa_gente"                    >
+| < FECHARELSE     : "ja_tamo_na_ditadura"                >
+| < ABRIRIF        : "gamemode_creative"                  >
+| < FECHARIF       : "gamemode_survival"                  >
+| < WHILE          : "em_busca_da_casa_automatica"        >
+| < ABRIRWHILE     : "farm_de_ferro"                      >
+| < FECHARWHILE    : "farm_de_cana_de_acucar"             >
+| < BREAK          : "kill"                               >
+| < FOR            : "intro_do_venom_extreme"             >
+| < ABRIRFOR       : "portal_do_aether"                   >
+| < FECHARFOR      : "portal_do_nether"                   >
+} 
+
+TOKEN : /*OPERADORES*/
+{
+	< SOMA: "combine"          >
+|	< SUBTRACAO: "-"           >
+|	< MULTIPLICACAO: "*"       >
+|	< DIVISAO: "/"             >	
+|	< ATRIBUICAO: "<-"         >
+|	< MAIOR: "stronger"        >
+|	< MENOR: "weaker"          >
+|	< MENOR_IGUAL: "<="        >
+|	< MAIOR_IGUAL: ">="        >
+|	< DIFERENTE: "<>"          > 
+|	< IGUAL: "="               >
+}
+
+TOKEN :
+{
+  < DECIMAL            : (< DIGITO >)+ ( "." (<DIGITO>)+ )?                                  >
+| < DIGITO             : [ "0"-"9" ]                                                         >
+| < ID                 : ["a" - "z" , "A" - "Z"](["a" - "z" , "A" - "Z" , "0" - "9", "_"])*  > 
+| < LETRA              : ["A" - "Z" ] | ["a" - "z"]                                          >
+| < PONTOVIRGULA       : ";"                                                                 >
+| < VIRGULA            : ","                                                                 >
+| < STRING             : "'" (~["'"])* "'"                                                   >
+| < PARENTES_ESQUERDA  : "("                                                                 >
+| < PARENTES_DIREITA   : ")"                                                                 >
+| < DELIMITAR_VARCHAR  : "'"                                                                 > 
+}
+
+/* ---------------------------------------------------- START BLOCO PRINCIPAL ---------------------------------------------------------------------------------*/
+SimpleNode main() : // OKAYYY
+{
+  RecoverySet sincronizacao = First.main;
+}
+{
+  try {
+    CREATEWORLD() ID() PONTOVIRGULA()
+    bloco()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "main");
+  }
+  { return jjtThis; }
+}
+
+void bloco() : //OKAYYY
+{
+  RecoverySet sincronizacao = First.bloco;
+}
+{
+  try {
+    OVERWORLD()
+    (declaracaoVariavel())*
+    (comando())*
+    BEDROCK()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "bloco");
+  }
+}
+
+/* ---------------------------------------------------- END BLOCO PRINCIPAL ---------------------------------------------------------------------------------*/
+
+void comando() : //okayyyy
+{
+  RecoverySet sincronizacao = First.comando;
+}
+{
+  try {
+    atribuicao()
+  | ifStmt()
+  | whileLoop()
+  | forLoop() 
+  | breakStmt()
+  | printStmt()
+  | continueStmt()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "comando");
+  }
+}
+
+/* ---------------------------------------------------- START BLOCO WHILE ---------------------------------------------------------------------------------*/
+void whileLoop() : //OKAYYYY
+{
+  RecoverySet sincronizacao = First.whileLoop;
+}
+{
+  try {
+    WHILE() expressao()
+    ABRIRWHILE() blocoWhile() FECHARWHILE()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "whileLoop");
+  }
+}
+
+void blocoWhile() : // OKAYYY
+{
+  RecoverySet sincronizacao = First.blocoWhile;
+}
+{
+  try {
+    ( declaracaoVariavel() | comando() )+
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "blocoWhile");
+  }
+}
+
+void breakStmt() : //okayyyy
+{
+  RecoverySet sincronizacao = First.breakStmt;
+}
+{
+  try {
+    BREAK() PONTOVIRGULA()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "breakStmt");
+  }
+}
+
+/* ---------------------------------------------------- END BLOCO WHILE ---------------------------------------------------------------------------------*/
+
+void continueStmt() : // OKAYYY
+{
+  RecoverySet sincronizacao = First.continueStmt;
+}
+{
+  try {
+    CONTINUE() PONTOVIRGULA()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "continueStmt");
+  }
+}
+
+/* ---------------------------------------------------- START BLOCO FOR ---------------------------------------------------------------------------------*/
+void forLoop() : //OKAYYY
+{
+  RecoverySet sincronizacao = First.forLoop;
+}
+{
+  try {
+    FOR() PARENTES_ESQUERDA()
+    forInitOpt() PONTOVIRGULA()
+    forCondOpt() PONTOVIRGULA()
+    forUpdateOpt()
+    PARENTES_DIREITA()
+    ABRIRFOR() blocoFor() FECHARFOR()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "forLoop");
+  }
+}
+
+void blocoFor() : //OKAYYY
+{
+  RecoverySet sincronizacao = First.blocoFor;
+}
+{
+  try {
+    ( declaracaoVariavel() | comando() )+
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "blocoFor");
+  }
+}
+
+void forInitOpt() : //OKAYYY
+{
+  RecoverySet sincronizacao = First.forInitOpt;
+}
+{
+  try {
+    ( forInit() )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "forInitOpt");
+  }
+}
+void forCondOpt() : //OKAYY
+{
+  RecoverySet sincronizacao = First.forCondOpt;
+}
+{
+  try {
+    ( expressao() )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "forCondOpt");
+  }
+}
+void forUpdateOpt() : //OKAYY
+{
+  RecoverySet sincronizacao = First.forUpdateOpt;
+}
+{
+  try {
+    ( atribuicaoFor() ( VIRGULA() atribuicaoFor() )* )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "forUpdateOpt");
+  }
+}
+
+void forInit() : //OKAYY
+{
+  RecoverySet sincronizacao = First.forInit;
+}
+{
+  try {
+      tipoDado() listaDeclaracoes()
+    | atribuicaoFor()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "forInit");
+  }
+}
+
+void atribuicaoFor() : //OKAYY
+{
+  RecoverySet sincronizacao = First.atribuicaoFor;
+}
+{
+  try {
+    ID() ATRIBUICAO() expressao()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "atribuicaoFor");
+  }
+}
+/* ---------------------------------------------------- END BLOCO FOR ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START ESTRUTURA DE CONTROLE ---------------------------------------------------------------------------------*/
+void ifStmt() : // okayyy
+{
+  RecoverySet sincronizacao = First.ifStmt;
+}
+{
+  try {
+    IF() expressao()
+    ABRIRIF() THEN()
+    blocoIf()
+    FECHARIF()
+    ( elseClause() )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "ifStmt");
+  }
+}
+
+void elseClause() : //okayyy
+{
+  RecoverySet sincronizacao = First.elseClause;
+}
+{
+  try {
+    ELSE() ABRIRELSE()
+    blocoElse()
+    FECHARELSE()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "elseClause");
+  }
+}
+
+void blocoIf() : //OKAYYY
+{
+  RecoverySet sincronizacao = First.blocoIf;
+}
+{
+  try {
+    ( declaracaoVariavel() | comando() )+
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "blocoIf");
+  }
+}
+
+
+void blocoElse() : //okayyy
+{
+  RecoverySet sincronizacao = First.blocoElse;
+}
+{
+  try {
+    ( declaracaoVariavel()  | comando() )+
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "blocoElse");
+  }
+}
+
+/* ---------------------------------------------------- END ESTRUTURA DE CONTROLE ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
+void atribuicao() : // okayyy
+{
+  RecoverySet sincronizacao = First.atribuicao;
+}
+{
+  try {
+    ID() ATRIBUICAO() expressao() PONTOVIRGULA()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "atribuicao");
+  }
+}
+/* ---------------------------------------------------- END ATRIBUIÇÃO ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START PRINTF ---------------------------------------------------------------------------------*/
+void printStmt() : //okayyy
+{
+  RecoverySet sincronizacao = First.printStmt;
+}
+{
+  try {
+    PRINTF() PARENTES_ESQUERDA() STRING() PARENTES_DIREITA() PONTOVIRGULA()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "printStmt");
+  }
+}
+
+/* ---------------------------------------------------- END PRINTF ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START EXPRESSOES (LL(1)) ------------------------------*/
+
+// Expressão completa (nível mais alto: OR)
+void expressao() : //OKAYYY
+{
+  RecoverySet sincronizacao = First.expressao;
+}
+{
+  try {
+    exprOr()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "expressao");
+  }
+}
+
+// exprOr -> exprAnd (OR exprAnd)*
+void exprOr() : // ok
+{
+  RecoverySet sincronizacao = First.exprOr;
+}
+{
+  try {
+    exprAnd() exprOrLinha()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprOr");
+  }
+}
+
+void exprOrLinha() : // ok
+{
+  RecoverySet sincronizacao = First.exprOrLinha;
+}
+{
+  try {
+    ( OR() exprAnd() exprOrLinha() )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprOrLinha");
+  }
+}
+
+// exprAnd -> exprRel (AND exprRel)*
+void exprAnd() : // ok
+{
+  RecoverySet sincronizacao = First.exprAnd;
+}
+{
+  try {
+    exprRel() exprAndLinha()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprAnd");
+  }
+}
+
+void exprAndLinha() : // ok
+{
+  RecoverySet sincronizacao = First.exprAndLinha;
+}
+{
+  try {
+    ( AND() exprRel() exprAndLinha() )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprAndLinha");
+  }
+}
+
+// exprRel -> exprAditiva (RelOp exprAditiva)?
+void exprRel() : //ok 
+{
+  RecoverySet sincronizacao = First.exprRel;
+}
+{
+  try {
+    exprAditiva() exprRelLinha()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprRel");
+  }
+}
+
+void exprRelLinha() : // ok
+{
+  RecoverySet sincronizacao = First.exprRelLinha;
+}
+{
+  try {
+    ( tipoCondicao() exprAditiva() )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprRelLinha");
+  }
+}
+// exprAditiva -> exprMultiplicativa ( (+|-) exprMultiplicativa )*
+void exprAditiva() : // ok
+{
+  RecoverySet sincronizacao = First.exprAditiva;
+}
+{
+  try {
+    exprMultiplicativa() exprAditivaLinha()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprAditiva");
+  }
+}
+
+void exprAditivaLinha() : //ok
+{
+  RecoverySet sincronizacao = First.exprAditivaLinha;
+}
+{
+  try {
+    ( ( SOMA() | SUBTRACAO() ) exprMultiplicativa() exprAditivaLinha() )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprAditivaLinha");
+  }
+}
+// exprMultiplicativa -> exprUnaria ( (*|/) exprUnaria )*
+void exprMultiplicativa() : // ok
+{
+  RecoverySet sincronizacao = First.exprMultiplicativa;
+}
+{
+  try {
+    exprUnaria() exprMultiplicativaLinha()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprMultiplicativa");
+  }
+}
+
+void exprMultiplicativaLinha() : // ok
+{
+  RecoverySet sincronizacao = First.exprMultiplicativaLinha;
+}
+{
+  try {
+    ( ( MULTIPLICACAO() | DIVISAO() ) exprUnaria() exprMultiplicativaLinha() )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprMultiplicativaLinha");
+  }
+}
+
+// exprUnaria -> NOT exprUnaria | primária
+void exprUnaria() :
+{
+  RecoverySet sincronizacao = First.exprUnaria;
+}
+{
+  try {
+      NOT() exprUnaria()
+    | exprPrimaria()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprUnaria");
+  }
+}
+
+// primária -> ID | DECIMAL | STRING | TRUE | FALSE | ( expressao )
+void exprPrimaria() :
+{
+  RecoverySet sincronizacao = First.exprPrimaria;
+}
+{
+  try {
+      ID()
+    | DECIMAL()
+    | STRING()
+    | TRUE()
+    | FALSE()
+    | PARENTES_ESQUERDA() expressao() PARENTES_DIREITA()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "exprPrimaria");
+  }
+}
+/* ---------------------------------------------------- END EXPRESSOES (LL(1)) --------------------------------*/
+
+
+
+/* ---------------------------------------------------- START DECLARACAO VARIAVEL ---------------------------------------------------------------------------------*/
+
+void declaracaoVariavel() : // OKAYYY
+{
+  RecoverySet sincronizacao = First.declaracaoVariavel;
+}
+{
+  try {
+    tipoDado() listaDeclaracoes() PONTOVIRGULA()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "declaracaoVariavel");
+  }
+}
+
+void listaDeclaracoes() ://ok
+{
+  RecoverySet sincronizacao = First.listaDeclaracoes;
+}
+{
+  try {
+    declaracaoUnica() ( VIRGULA() declaracaoUnica() )*
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "listaDeclaracoes");
+  }
+}
+
+void declaracaoUnica() : // ok
+{
+  RecoverySet sincronizacao = First.declaracaoUnica;
+}
+{
+  try {
+    ID() ( ATRIBUICAO()  expressao() )?
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "declaracaoUnica");
+  }
+}
+
+/* ---------------------------------------------------- END DECLARACAO VARIAVEL ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- START TIPOS DE DADOS---------------------------------------------------------------------------------*/
+
+void tipoDado() : //ok
+{
+  RecoverySet sincronizacao = First.tipoDado;
+}
+{
+  try {
+    TIPOINTEIRO() | TIPOBINARIO() | TIPOTEXTO() | TIPOFLUTUANTE()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "tipoDado");
+  }
+}
+/* ---------------------------------------------------- END TIPOS DE DADOS ---------------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------- STAR TIPO DE CONDIÇÃO ---------------------------------------------------------------------------------*/
+
+void tipoCondicao() : // ok
+{
+  RecoverySet sincronizacao = First.tipoCondicao;
+}
+{
+  try {
+    MAIOR() | MENOR() | MAIOR_IGUAL() | MENOR_IGUAL() | IGUAL() | DIFERENTE()
+  }
+  catch (ParseException e) {
+    consumeUntil(sincronizacao, e, "tipoCondicao");
+  }
+}
+/* ---------------------------------------------------- STAR TIPO DE CONDIÇÃO ---------------------------------------------------------------------------------*/
+
+/* -------------------- FOLHAS DA ÁRVORE (TOKENS COMO NÃO TERMINAIS) -------------------- */
+
+/* -------------------- NÃO TERMINAIS PARA CADA TOKEN -------------------- */
+
+/* PALAVRAS RESERVADAS */
+
+void CREATEWORLD() : {} { <CREATEWORLD> }
+void OVERWORLD()  : {} { <OVERWORLD>  }
+void BEDROCK()    : {} { <BEDROCK>    }
+
+void TIPOINTEIRO()   : {} { <TIPOINTEIRO>   }  // pedra
+void TIPOFLUTUANTE() : {} { <TIPOFLUTUANTE> }  // agua
+void TIPOTEXTO()     : {} { <TIPOTEXTO>     }  // placa
+void TIPOBINARIO()   : {} { <TIPOBINARIO>   }  // redstone
+
+void IF()    : {} { <IF>    } // vinicius13
+void THEN()  : {} { <THEN>  } // build
+void ELSE()  : {} { <ELSE>  } // monark
+
+void TRUE()  : {} { <TRUE>  } // tocha_acessa
+void FALSE() : {} { <FALSE> } // tocha_apagada
+
+void PRINTF()   : {} { <PRINTF>   } // chat
+void CONTINUE() : {} { <CONTINUE> } // isolaaados
+
+void AND() : {} { <AND> } // repetidor
+void OR()  : {} { <OR>  } // or
+void NOT() : {} { <NOT> } // tocha_invertida
+
+void ABRIRELSE()  : {} { <ABRIRELSE>  } // acordaaaa_gente
+void FECHARELSE() : {} { <FECHARELSE> } // ja_tamo_na_ditadura
+
+void ABRIRIF()  : {} { <ABRIRIF>  } // gamemode_creative
+void FECHARIF() : {} { <FECHARIF> } // gamemode_survival
+
+void WHILE()       : {} { <WHILE>       } // em_busca_da_casa_automatica
+void ABRIRWHILE()  : {} { <ABRIRWHILE>  } // farm_de_ferro
+void FECHARWHILE() : {} { <FECHARWHILE> } // farm_de_cana_de_acucar
+
+void BREAK() : {} { <BREAK> } // kill
+
+void FOR()       : {} { <FOR>       } // intro_do_venom_extreme
+void ABRIRFOR()  : {} { <ABRIRFOR>  } // portal_do_aether
+void FECHARFOR() : {} { <FECHARFOR> } // portal_do_nether
+
+
+/* OPERADORES */
+
+void SOMA()          : {} { <SOMA>          } // combine
+void SUBTRACAO()     : {} { <SUBTRACAO>     } // -
+void MULTIPLICACAO() : {} { <MULTIPLICACAO> } // *
+void DIVISAO()       : {} { <DIVISAO>       } // /
+void ATRIBUICAO()    : {} { <ATRIBUICAO>    } // <-
+void MAIOR()         : {} { <MAIOR>         } // stronger
+void MENOR()         : {} { <MENOR>         } // weaker
+void MENOR_IGUAL()   : {} { <MENOR_IGUAL>   } // <=
+void MAIOR_IGUAL()   : {} { <MAIOR_IGUAL>   } // >=
+void DIFERENTE()     : {} { <DIFERENTE>     } // <>
+void IGUAL()         : {} { <IGUAL>         } // =
+
+
+/* OUTROS TOKENS LÉXICOS */
+
+void DECIMAL() : {} { <DECIMAL> }
+void DIGITO()  : {} { <DIGITO>  }
+
+void ID()    : {} { <ID>    }
+void LETRA() : {} { <LETRA> }
+
+void PONTOVIRGULA() : {} { <PONTOVIRGULA> } // ;
+void VIRGULA()      : {} { <VIRGULA>      } // ,
+
+void STRING() : {} { <STRING> } // '...'
+
+void PARENTES_ESQUERDA() : {} { <PARENTES_ESQUERDA> } // (
+void PARENTES_DIREITA()  : {} { <PARENTES_DIREITA>  } // )
+
+void DELIMITAR_VARCHAR() : {} { <DELIMITAR_VARCHAR> } // '
+
