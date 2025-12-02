@@ -1,10 +1,12 @@
 /CompiladorAula.java
 /CompiladorAulaConstants.java
 /CompiladorAulaTokenManager.java
+/ParseException.java
+/SimpleCharStream.java
 /Token.java
-/CompiladorAula.jj
+/TokenMgrError.java
 /CompiladorAulaTreeConstants.java
 /JJTCompiladorAulaState.java
 /Node.java
 /SimpleNode.java
-/SimpleCharStream.java
+/CompiladorAula.jj
